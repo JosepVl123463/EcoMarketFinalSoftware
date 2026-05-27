@@ -19,11 +19,15 @@ const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = process.env.PORT || 8083;
-const PRODUCT_SERVICE_URL = process.env.PRODUCT_SERVICE_URL || 'http://localhost:8082';
+const PRODUCT_SERVICE_HOST = process.env.PRODUCT_SERVICE_HOST || 'localhost';
+const PRODUCT_SERVICE_PORT = process.env.PRODUCT_SERVICE_PORT || '8082';
+const PRODUCT_SERVICE_URL = `http://${PRODUCT_SERVICE_HOST}:${PRODUCT_SERVICE_PORT}`;
+const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL || `http://${process.env.NOTIFICATION_SERVICE_HOST || 'notification-service'}:${process.env.NOTIFICATION_SERVICE_PORT || '8086'}`;
 
 // CORS for frontend
+const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:3000,https://ecomarket.pe').split(',');
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://ecomarket.pe'],
+  origin: allowedOrigins,
   credentials: true,
 }));
 
@@ -59,7 +63,6 @@ app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), asy
 
         // Notify user via notification-service
         try {
-          const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:8086';
           await axios.post(`${NOTIFICATION_SERVICE_URL}/api/notifications/push`, {
             user_id: session.metadata?.userId || 'unknown',
             title: '¡Pago Exitoso! 🌿',
@@ -169,8 +172,6 @@ app.post('/api/payments/process-local', paymentRateLimit, verifyJWT, async (req,
 
     // Trigger notification in notification-service
     try {
-      const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:8086';
-      
       let methodLabel = method === 'card' ? 'Tarjeta' : method.toUpperCase();
       let bodyText = `Tu pago de S/. ${(amount || 0).toFixed(2)} con ${methodLabel} ha sido procesado. ¡Gracias por tu compra eco-amigable!`;
       

@@ -30,16 +30,23 @@ db = client.ecomarket_audit
 
 app = FastAPI(title="EcoMarket Audit Service", description="AI-driven Eco-Score and audit ledger with MongoDB persistence")
 
+CORS_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,https://ecomarket.pe").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://ecomarket.pe"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-AI_ENGINE_URL = os.getenv("AI_ENGINE_URL", "http://ai-engine:8085")
-PRODUCT_SERVICE_URL = os.getenv("PRODUCT_SERVICE_URL", "http://product-service:8082")
+AI_ENGINE_HOST = os.getenv("AI_ENGINE_HOST", "ai-engine")
+AI_ENGINE_PORT = os.getenv("AI_ENGINE_PORT", "8085")
+AI_ENGINE_URL = f"http://{AI_ENGINE_HOST}:{AI_ENGINE_PORT}"
+
+PRODUCT_SERVICE_HOST = os.getenv("PRODUCT_SERVICE_HOST", "product-service")
+PRODUCT_SERVICE_PORT = os.getenv("PRODUCT_SERVICE_PORT", "8082")
+PRODUCT_SERVICE_URL = f"http://{PRODUCT_SERVICE_HOST}:{PRODUCT_SERVICE_PORT}"
 
 
 class AuditRequest(BaseModel):

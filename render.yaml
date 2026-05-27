@@ -1,0 +1,196 @@
+services:
+  # ── API Gateway ──────────────────────────────────────────
+  - type: web
+    name: ecomarket-gateway
+    env: node
+    region: us
+    rootDir: infra/cloud-gateway
+    healthCheckPath: /api/products/health
+    envVars:
+      - key: AUTH_URL
+        fromService:
+          type: web
+          name: ecomarket-auth-service
+          property: host
+      - key: AUTH_PORT
+        fromService:
+          type: web
+          name: ecomarket-auth-service
+          property: port
+      - key: PRODUCT_URL
+        fromService:
+          type: web
+          name: ecomarket-product-service
+          property: host
+      - key: PRODUCT_PORT
+        fromService:
+          type: web
+          name: ecomarket-product-service
+          property: port
+      - key: PAYMENT_URL
+        fromService:
+          type: web
+          name: ecomarket-payment-service
+          property: host
+      - key: PAYMENT_PORT
+        fromService:
+          type: web
+          name: ecomarket-payment-service
+          property: port
+      - key: AUDIT_URL
+        fromService:
+          type: web
+          name: ecomarket-audit-service
+          property: host
+      - key: AUDIT_PORT
+        fromService:
+          type: web
+          name: ecomarket-audit-service
+          property: port
+      - key: AI_URL
+        fromService:
+          type: web
+          name: ecomarket-ai-engine
+          property: host
+      - key: AI_PORT
+        fromService:
+          type: web
+          name: ecomarket-ai-engine
+          property: port
+
+  # ── Auth Service (Java/Spring Boot) ──────────────────────
+  - type: web
+    name: ecomarket-auth-service
+    env: docker
+    region: us
+    dockerfilePath: ./services/auth-service/Dockerfile
+    envVars:
+      - key: PORT
+        value: "8081"
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        value: "ecomarket-jwt-production-secret-2026"
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+
+  # ── Product Service (Java/Spring Boot) ───────────────────
+  - type: web
+    name: ecomarket-product-service
+    env: docker
+    region: us
+    dockerfilePath: ./services/product-service/Dockerfile
+    envVars:
+      - key: PORT
+        value: "8082"
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        value: "ecomarket-jwt-production-secret-2026"
+      - key: AUDIT_SERVICE_URL
+        value: https://ecomarket-audit-service.onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+
+  # ── Payment Service (Node.js) ───────────────────────────
+  - type: web
+    name: ecomarket-payment-service
+    env: docker
+    region: us
+    dockerfilePath: ./services/payment-service/Dockerfile
+    envVars:
+      - key: PORT
+        value: "8083"
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_SUCCESS_URL
+        sync: false
+      - key: STRIPE_CANCEL_URL
+        sync: false
+      - key: JWT_SECRET
+        value: "ecomarket-jwt-production-secret-2026"
+      - key: PRODUCT_SERVICE_HOST
+        fromService:
+          type: web
+          name: ecomarket-product-service
+          property: host
+      - key: PRODUCT_SERVICE_PORT
+        fromService:
+          type: web
+          name: ecomarket-product-service
+          property: port
+      - key: NOTIFICATION_SERVICE_HOST
+        fromService:
+          type: web
+          name: ecomarket-notification-service
+          property: host
+      - key: NOTIFICATION_SERVICE_PORT
+        fromService:
+          type: web
+          name: ecomarket-notification-service
+          property: port
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+
+  # ── Audit Service (Python/FastAPI + reportlab) ──────────
+  - type: web
+    name: ecomarket-audit-service
+    env: docker
+    region: us
+    dockerfilePath: ./services/audit-service/Dockerfile
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PORT
+        value: "8084"
+      - key: MONGO_URI
+        sync: false
+      - key: AI_ENGINE_HOST
+        fromService:
+          type: web
+          name: ecomarket-ai-engine
+          property: host
+      - key: AI_ENGINE_PORT
+        fromService:
+          type: web
+          name: ecomarket-ai-engine
+          property: port
+      - key: PRODUCT_SERVICE_HOST
+        fromService:
+          type: web
+          name: ecomarket-product-service
+          property: host
+      - key: PRODUCT_SERVICE_PORT
+        fromService:
+          type: web
+          name: ecomarket-product-service
+          property: port
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+
+  # ── AI Engine (Python/FastAPI) ──────────────────────────
+  - type: web
+    name: ecomarket-ai-engine
+    env: python
+    region: us
+    rootDir: services/ai-engine
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+
+  # ── Notification Service (Python/FastAPI) ──────────────
+  - type: web
+    name: ecomarket-notification-service
+    env: python
+    region: us
+    rootDir: services/notification-service
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
