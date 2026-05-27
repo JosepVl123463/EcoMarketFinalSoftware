@@ -1,0 +1,90 @@
+_format_version: "3.0"
+
+services:
+  - name: auth-service
+    url: http://auth-service:8081
+    routes:
+      - name: auth-route
+        paths:
+          - /api/auth
+        strip_path: false
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 30
+          hour: 200
+          policy: local
+          fault_tolerant: true
+          hide_client_headers: false
+
+  - name: product-service
+    url: http://product-service:8082
+    routes:
+      - name: product-route
+        paths:
+          - /api/products
+          - /api/orders
+        strip_path: false
+
+  - name: payment-service
+    url: http://payment-service:8083
+    routes:
+      - name: payment-route
+        paths:
+          - /api/payments
+        strip_path: false
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 20
+          policy: local
+
+  - name: audit-service
+    url: http://audit-service:8084
+    routes:
+      - name: audit-route
+        paths:
+          - /api/audit
+        strip_path: false
+
+  - name: ai-engine
+    url: http://ai-engine:8085
+    routes:
+      - name: ai-route
+        paths:
+          - /api/ai
+        strip_path: false
+
+  - name: notification-service
+    url: http://notification-service:8086
+    routes:
+      - name: notification-route
+        paths:
+          - /api/notifications
+        strip_path: false
+
+plugins:
+  - name: cors
+    config:
+      origins:
+        - http://localhost:3000
+        - https://ecomarket.pe
+      methods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+      headers:
+        - Accept
+        - Accept-Version
+        - Content-Length
+        - Content-MD5
+        - Content-Type
+        - Date
+        - Authorization
+      exposed_headers:
+        - Authorization
+      credentials: true
+      max_age: 3600

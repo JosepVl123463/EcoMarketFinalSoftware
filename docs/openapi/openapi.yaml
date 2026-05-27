@@ -1,0 +1,92 @@
+openapi: "3.1.0"
+info:
+  title: EcoMarket Core Services
+  version: "1.1.0"
+  description: API for EcoMarket Services — Stripe Payments, QLDB Auditing, and AI Analysis.
+
+paths:
+  /api/payments/create-session:
+    post:
+      summary: Crear sesión de Stripe Checkout
+      security: [BearerAuth: []]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [orderId, totalAmount]
+              properties:
+                orderId:       { type: string, format: uuid }
+                totalAmount:   { type: number }
+                items:         { type: array, items: { type: object } }
+      responses:
+        "200":
+          description: Sesión creada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  checkoutUrl: { type: string }
+                  sessionId:   { type: string }
+
+  /api/payments/webhook:
+    post:
+      summary: Webhook de Stripe
+      security: [StripeSignature: []]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Evento recibido
+
+  /api/audit/products/{productId}/trail:
+    get:
+      summary: Línea de tiempo completa de trazabilidad (Amazon QLDB)
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Detalles de trazabilidad obtenidos con éxito
+
+  /api/ai/analyze:
+    post:
+      summary: Analizar ingredientes de un producto
+      security: [BearerAuth: []]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [image_url]
+              properties:
+                image_url: { type: string }
+      responses:
+        "200":
+          description: Análisis completado
+
+components:
+  schemas:
+    PaymentResponse:
+      type: object
+      properties:
+        payment_id:   { type: string, format: uuid }
+        status:       { type: string, enum: [pending, processing, confirmed, failed] }
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    StripeSignature:
+      type: apiKey
+      in: header
+      name: Stripe-Signature

@@ -1,0 +1,170 @@
+
+services:
+  # Base de Datos Relacional (PostgreSQL)
+  postgres:
+    image: postgres:16-alpine
+    container_name: ecomarket-postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: ecomarket_password
+      POSTGRES_DB: ecomarket_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./infra/postgres/init_schema.sql:/docker-entrypoint-initdb.d/init.sql
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - ecomarket-net
+
+  # Base de Datos NoSQL (MongoDB para NLP AI)
+  mongodb:
+    image: mongo:7.0
+    container_name: ecomarket-mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: mongo_password
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+    networks:
+      - ecomarket-net
+
+  # Caché en Memoria (Redis)
+  redis:
+    image: redis:7-alpine
+    container_name: ecomarket-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - ecomarket-net
+
+  # API Gateway (Kong)
+  kong:
+    image: kong:3.6-ubuntu
+    container_name: ecomarket-kong
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+    ports:
+      - "8000:8000"
+      - "8443:8443"
+      - "8001:8001"
+    volumes:
+      - ./infra/kong/kong.yml:/etc/kong/kong.yml
+    networks:
+      - ecomarket-net
+    depends_on:
+      - auth-service
+      - product-service
+      - payment-service
+      - audit-service
+      - ai-engine
+      - notification-service
+
+  # Microservices
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: ecomarket-auth-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ecomarket_db
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: ecomarket_password
+    networks:
+      - ecomarket-net
+    depends_on:
+      - postgres
+
+  product-service:
+    build:
+      context: ./services/product-service
+      dockerfile: Dockerfile
+    container_name: ecomarket-product-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ecomarket_db
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: ecomarket_password
+    networks:
+      - ecomarket-net
+    depends_on:
+      - postgres
+
+  payment-service:
+    build:
+      context: ./services/payment-service
+      dockerfile: Dockerfile
+    container_name: ecomarket-payment-service
+    ports:
+      - "8083:8083"
+    env_file:
+      - ./services/payment-service/.env
+    environment:
+      PRODUCT_SERVICE_URL: http://product-service:8082
+    networks:
+      - ecomarket-net
+
+  audit-service:
+    build:
+      context: ./services/audit-service
+      dockerfile: Dockerfile
+    container_name: ecomarket-audit-service
+    ports:
+      - "8084:8084"
+    networks:
+      - ecomarket-net
+    depends_on:
+      - mongodb
+
+  ai-engine:
+    build:
+      context: ./services/ai-engine
+      dockerfile: Dockerfile
+    container_name: ecomarket-ai-engine
+    ports:
+      - "8085:8085"
+    networks:
+      - ecomarket-net
+    depends_on:
+      - mongodb
+
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    container_name: ecomarket-notification-service
+    ports:
+      - "8086:8086"
+    networks:
+      - ecomarket-net
+
+  # Frontend Web App
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: ecomarket-web
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    networks:
+      - ecomarket-net
+
+volumes:
+  pgdata:
+  mongodata:
+
+networks:
+  ecomarket-net:
+    driver: bridge
