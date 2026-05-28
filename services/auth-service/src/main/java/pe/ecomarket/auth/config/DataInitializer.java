@@ -18,8 +18,8 @@ public class DataInitializer implements ApplicationRunner {
     private final PasswordEncoder passwordEncoder;
 
     // Credenciales fijas del administrador principal
-    private static final String ADMIN_EMAIL    = "ecomarket.admin@gmail.com";
-    private static final String ADMIN_PASSWORD = "Eco2026Admin";
+    private static final String ADMIN_EMAIL    = "admin@ecomarket.pe";
+    private static final String ADMIN_PASSWORD = "Admin123";
     private static final String ADMIN_NAME     = "Administrador Principal";
 
     @Override

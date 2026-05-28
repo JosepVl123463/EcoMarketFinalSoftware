@@ -60,12 +60,10 @@ function LoginForm() {
           setError('No se pudo conectar al servidor. Verifica que el backend esté corriendo.');
         } else if (status === 429) {
           setError(apiError || 'Demasiados intentos. Espera 5 minutos antes de reintentar.');
-        } else if (status === 400) {
-          setError('Datos inválidos. Verifica el email y la contraseña.');
-        } else if (status === 401 || status === 404) {
+        } else if (status === 401 || status === 403 || status === 400 || status === 404 || status === 500) {
           setError('Credenciales incorrectas. Verifica tu email y contraseña.');
         } else {
-          setError(apiError || 'Credenciales incorrectas. Intenta de nuevo.');
+          setError('Error del servidor. Intenta de nuevo en unos segundos.');
         }
       } finally {
         setLoading(false);
