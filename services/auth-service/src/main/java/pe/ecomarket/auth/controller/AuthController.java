@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -15,6 +16,7 @@ import pe.ecomarket.auth.dto.AuthRequest;
 import pe.ecomarket.auth.dto.AuthResponse;
 import pe.ecomarket.auth.dto.RegisterProducerRequest;
 import pe.ecomarket.auth.dto.RegisterRequest;
+import pe.ecomarket.auth.repository.UserRepository;
 import pe.ecomarket.auth.service.AuthService;
 import pe.ecomarket.auth.service.TurnstileService;
 
@@ -24,10 +26,12 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Slf4j
 public class AuthController {
 
     private final AuthService authService;
     private final TurnstileService turnstileService;
+    private final UserRepository userRepository;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(
@@ -75,6 +79,22 @@ public class AuthController {
         AuthResponse authResponse = authService.login(request);
         setAuthCookie(httpResponse, authResponse.getToken());
         return ResponseEntity.ok(authResponse);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody java.util.Map<String, String> body) {
+        // Por seguridad devolvemos SIEMPRE el mismo mensaje,
+        // sin revelar si el email existe o no en el sistema.
+        String email = body.getOrDefault("email", "");
+        if (!email.isBlank()) {
+            userRepository.findByEmail(email).ifPresent(user -> {
+                // TODO en producción: generar token, guardarlo y enviar email via notification-service
+                log.info("Password reset requested for: {}", email);
+            });
+        }
+        return ResponseEntity.ok(java.util.Map.of(
+                "message", "Si existe una cuenta con ese email, recibirás las instrucciones en breve."
+        ));
     }
 
     @PostMapping("/logout")

@@ -49,6 +49,7 @@ public class SecurityConfig {
                     "/api/auth/register/**",
                     "/api/auth/google",
                     "/api/auth/logout",
+                    "/api/auth/forgot-password",
                     "/actuator/health"
                 ).permitAll()
                 // All other endpoints require authentication

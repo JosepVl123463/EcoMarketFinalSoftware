@@ -31,3 +31,7 @@ jwt:
 turnstile:
   secret-key: ${TURNSTILE_SECRET_KEY:1x0000000000000000000000000000000AA}
   verify-url: https://challenges.cloudflare.com/turnstile/v0/siteverify
+
+admin:
+  email: ${ADMIN_EMAIL:admin@ecomarket.pe}
+  password: ${ADMIN_PASSWORD:123456789}
