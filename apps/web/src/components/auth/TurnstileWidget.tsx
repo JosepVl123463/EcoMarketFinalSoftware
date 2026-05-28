@@ -14,12 +14,14 @@ declare global {
       reset: (widgetId: string) => void;
       remove: (widgetId: string) => void;
     };
+    _turnstileLoading?: boolean;
   }
 }
 
-// Clave de sitio: usa la clave de test de Cloudflare por defecto (siempre pasa).
-// En producción, configura NEXT_PUBLIC_TURNSTILE_SITE_KEY en .env
+// Clave de test de Cloudflare (siempre pasa automáticamente, sin interacción del usuario).
+// En producción reemplaza con NEXT_PUBLIC_TURNSTILE_SITE_KEY en .env
 const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '1x00000000000000000000AA';
+const SCRIPT_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
 
 export function TurnstileWidget({ onSuccess, onError }: TurnstileWidgetProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -31,17 +33,32 @@ export function TurnstileWidget({ onSuccess, onError }: TurnstileWidgetProps) {
       sitekey: SITE_KEY,
       callback: (token: unknown) => onSuccess(token as string),
       'error-callback': () => onError?.(),
+      'expired-callback': () => {
+        // El token expiró — limpia para que el usuario vuelva a verificar
+        widgetIdRef.current = null;
+        onError?.();
+      },
       theme: 'light',
     });
   }, [onSuccess, onError]);
 
   useEffect(() => {
+    // Si turnstile ya está cargado en window, renderiza directamente
     if (window.turnstile) {
       renderWidget();
       return;
     }
+
+    // Evita agregar el script duplicado si ya está en el documento o cargando
+    const existing = document.querySelector(`script[src="${SCRIPT_SRC}"]`);
+    if (existing) {
+      // Script ya existe pero turnstile aún no está listo — espera el evento load
+      existing.addEventListener('load', renderWidget);
+      return () => existing.removeEventListener('load', renderWidget);
+    }
+
     const script = document.createElement('script');
-    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+    script.src = SCRIPT_SRC;
     script.async = true;
     script.defer = true;
     script.onload = renderWidget;

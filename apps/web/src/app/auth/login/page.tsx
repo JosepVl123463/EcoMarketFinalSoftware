@@ -58,16 +58,22 @@ function LoginForm() {
         const redirect = searchParams.get('redirect') ?? (user.role === 'admin' ? '/admin' : '/');
         startTransition(() => router.push(redirect));
       } catch (err: unknown) {
-        const axiosError = err as { response?: { status?: number; data?: { error?: string } } };
+        const axiosError = err as { response?: { status?: number; data?: { error?: string; message?: string } }; code?: string };
         const status = axiosError?.response?.status;
         const apiError = axiosError?.response?.data?.error;
 
-        if (status === 429) {
+        if (!status || axiosError?.code === 'ERR_NETWORK' || axiosError?.code === 'ECONNREFUSED') {
+          setError('No se pudo conectar al servidor. Verifica que el backend esté corriendo.');
+        } else if (status === 429) {
           setError(apiError || 'Demasiados intentos. Espera 5 minutos antes de reintentar.');
         } else if (status === 403) {
           setError('Verificación de seguridad fallida. Recarga la página e inténtalo de nuevo.');
+        } else if (status === 400) {
+          setError('Datos inválidos. Verifica el email y la contraseña.');
+        } else if (status === 401 || status === 404) {
+          setError('Credenciales incorrectas. Verifica tu email y contraseña.');
         } else {
-          setError('Credenciales incorrectas. Intenta de nuevo.');
+          setError(apiError || 'Error inesperado. Intenta de nuevo.');
         }
       } finally {
         setLoading(false);

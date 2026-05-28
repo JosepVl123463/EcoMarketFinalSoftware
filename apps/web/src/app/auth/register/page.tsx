@@ -29,7 +29,6 @@ function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [validatingRuc, setValidatingRuc] = useState(false);
   const [rucValidated, setRucValidated] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isRegisteredPending, setIsRegisteredPending] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
@@ -126,7 +125,6 @@ function RegisterForm() {
       toast.error('El registro con Google es exclusivo para consumidores. Los productores deben pasar validación fiscal RUC.');
       return;
     }
-    void googleLoading; // referencia para evitar lint warning
     toast.error('Registro con Google no disponible. Usa email y contraseña.');
   };
 
@@ -170,9 +168,11 @@ function RegisterForm() {
         toast.success('¡Cuenta creada exitosamente! Bienvenido a Ecomarket 🌿');
         router.push('/');
       } catch (err: unknown) {
-        const axiosError = err as { response?: { status?: number; data?: { error?: string } } };
+        const axiosError = err as { response?: { status?: number; data?: { error?: string } }; code?: string };
         const status = axiosError?.response?.status;
-        if (status === 403) {
+        if (!status || axiosError?.code === 'ERR_NETWORK') {
+          setError('No se pudo conectar al servidor. Verifica que el backend esté corriendo.');
+        } else if (status === 403) {
           setError('Verificación de seguridad fallida. Recarga la página e inténtalo de nuevo.');
         } else if (status === 409) {
           setError('Ya existe una cuenta con ese email. Intenta iniciar sesión.');
@@ -224,9 +224,11 @@ function RegisterForm() {
         setIsRegisteredPending(true);
         toast.success('¡Solicitud corporativa registrada y pendiente de verificación!');
       } catch (err: unknown) {
-        const axiosError = err as { response?: { status?: number; data?: { error?: string } } };
+        const axiosError = err as { response?: { status?: number; data?: { error?: string } }; code?: string };
         const status = axiosError?.response?.status;
-        if (status === 403) {
+        if (!status || axiosError?.code === 'ERR_NETWORK') {
+          setError('No se pudo conectar al servidor. Verifica que el backend esté corriendo.');
+        } else if (status === 403) {
           setError('Verificación de seguridad fallida. Recarga la página e inténtalo de nuevo.');
         } else {
           setError('Error al registrar la solicitud. Verifica tus datos e inténtalo de nuevo.');
@@ -329,7 +331,7 @@ function RegisterForm() {
           <button
             type="button"
             onClick={handleGoogleLogin}
-            disabled={loading || googleLoading}
+            disabled={loading}
             className="w-full bg-[var(--surface)] border border-[var(--border)] text-[var(--text-secondary)] py-3.5 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-3 hover:bg-[var(--input-bg)] transition hover:border-[var(--border-light)] hover:scale-[1.01] disabled:opacity-70"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -350,8 +352,7 @@ function RegisterForm() {
                 d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.22 0 12 0 7.46 0 3.48 3.7 1.47 7.68l3.98 3.22c.92-2.77 3.5-4.83 6.55-4.83z"
               />
             </svg>
-            {googleLoading ? <Loader2 size={18} className="animate-spin text-[#4285F4]" /> : null}
-            <span>{googleLoading ? 'Conectando...' : 'Registrarse con Google'}</span>
+            <span>Registrarse con Google</span>
           </button>
 
           <div className="flex items-center my-4">

@@ -27,8 +27,9 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       isAuthenticated: false,
       setAuth: (user, token) => {
-        // Token guardado solo en memoria (Zustand), NO en localStorage
-        // El backend también emite httpOnly cookie como capa de seguridad adicional
+        // El token se persiste en sessionStorage (se borra al cerrar el tab, no se comparte entre tabs).
+        // El backend TAMBIÉN emite httpOnly cookie: en producción (mismo dominio) el cookie
+        // es la fuente de verdad; en desarrollo cross-origin se usa el token de sessionStorage.
         set({ user, token, isAuthenticated: true });
       },
       logout: () => {
@@ -37,8 +38,16 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'ecomarket-auth',
-      // Solo persistir datos del usuario, NUNCA el token (evita XSS via localStorage)
-      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
+      // sessionStorage: más seguro que localStorage (no persiste entre sesiones de navegador)
+      storage: {
+        getItem: (name) => {
+          const value = sessionStorage.getItem(name);
+          return value ? JSON.parse(value) : null;
+        },
+        setItem: (name, value) => sessionStorage.setItem(name, JSON.stringify(value)),
+        removeItem: (name) => sessionStorage.removeItem(name),
+      },
+      partialize: (state) => ({ user: state.user, token: state.token, isAuthenticated: state.isAuthenticated }),
     }
   )
 );
