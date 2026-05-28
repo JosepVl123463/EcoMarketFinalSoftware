@@ -7,10 +7,7 @@ services:
     dockerfilePath: ./apps/web/Dockerfile
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        fromService:
-          type: web
-          name: ecomarket-gateway
-          property: hostport
+        value: "https://ecomarket-gateway.onrender.com"
       - key: NEXT_PUBLIC_TURNSTILE_SITE_KEY
         sync: false
 
