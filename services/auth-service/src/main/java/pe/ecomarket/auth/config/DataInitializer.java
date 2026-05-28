@@ -2,7 +2,6 @@ package pe.ecomarket.auth.config;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -10,11 +9,6 @@ import org.springframework.stereotype.Component;
 import pe.ecomarket.auth.model.User;
 import pe.ecomarket.auth.repository.UserRepository;
 
-/**
- * Garantiza que el usuario administrador exista en la BD al arrancar el backend.
- * Si ya existe, actualiza la contraseña con el hash correcto.
- * Esto resuelve el problema de BDs ya inicializadas con hashes incorrectos.
- */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -23,11 +17,10 @@ public class DataInitializer implements ApplicationRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${admin.email:admin@ecomarket.pe}")
-    private String adminEmail;
-
-    @Value("${admin.password:123456789}")
-    private String adminPassword;
+    // Credenciales fijas del administrador principal
+    private static final String ADMIN_EMAIL    = "ecomarket.admin@gmail.com";
+    private static final String ADMIN_PASSWORD = "Eco2026Admin";
+    private static final String ADMIN_NAME     = "Administrador Principal";
 
     @Override
     public void run(ApplicationArguments args) {
@@ -35,27 +28,27 @@ public class DataInitializer implements ApplicationRunner {
     }
 
     private void upsertAdmin() {
-        String hashedPassword = passwordEncoder.encode(adminPassword);
+        String hash = passwordEncoder.encode(ADMIN_PASSWORD);
 
-        userRepository.findByEmail(adminEmail).ifPresentOrElse(
+        userRepository.findByEmail(ADMIN_EMAIL).ifPresentOrElse(
             existing -> {
-                existing.setProviderId(hashedPassword);
+                existing.setProviderId(hash);
                 existing.setRole("admin");
-                existing.setFullName("Administrador Principal");
+                existing.setFullName(ADMIN_NAME);
                 userRepository.save(existing);
-                log.info("Admin user updated: {}", adminEmail);
+                log.info("=== ADMIN ACTUALIZADO === email: {} | password: {}", ADMIN_EMAIL, ADMIN_PASSWORD);
             },
             () -> {
                 var admin = User.builder()
-                        .email(adminEmail)
-                        .fullName("Administrador Principal")
+                        .email(ADMIN_EMAIL)
+                        .fullName(ADMIN_NAME)
                         .provider("email")
-                        .providerId(hashedPassword)
+                        .providerId(hash)
                         .role("admin")
                         .ecoScore(999)
                         .build();
                 userRepository.save(admin);
-                log.info("Admin user created: {}", adminEmail);
+                log.info("=== ADMIN CREADO === email: {} | password: {}", ADMIN_EMAIL, ADMIN_PASSWORD);
             }
         );
     }

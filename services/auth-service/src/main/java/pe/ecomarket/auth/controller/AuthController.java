@@ -5,8 +5,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -29,31 +31,59 @@ public class AuthController {
     private final AuthService authService;
     private final UserRepository userRepository;
 
+    @PostMapping("/login")
+    public ResponseEntity<?> login(
+            @Valid @RequestBody AuthRequest request,
+            HttpServletResponse httpResponse) {
+        try {
+            AuthResponse authResponse = authService.login(request);
+            setAuthCookie(httpResponse, authResponse.getToken());
+            return ResponseEntity.ok(authResponse);
+        } catch (AuthenticationException e) {
+            // BadCredentialsException, UsernameNotFoundException, etc.
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Credenciales incorrectas. Verifica tu email y contraseña."));
+        } catch (Exception e) {
+            log.error("Login error: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error interno. Intenta de nuevo."));
+        }
+    }
+
     @PostMapping("/register")
     public ResponseEntity<?> register(
             @Valid @RequestBody RegisterRequest request,
             HttpServletResponse httpResponse) {
-        AuthResponse authResponse = authService.register(request);
-        setAuthCookie(httpResponse, authResponse.getToken());
-        return ResponseEntity.ok(authResponse);
+        try {
+            AuthResponse authResponse = authService.register(request);
+            setAuthCookie(httpResponse, authResponse.getToken());
+            return ResponseEntity.ok(authResponse);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Register error: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error interno. Intenta de nuevo."));
+        }
     }
 
     @PostMapping("/register/producer")
     public ResponseEntity<?> registerProducer(
             @Valid @RequestBody RegisterProducerRequest request,
             HttpServletResponse httpResponse) {
-        AuthResponse authResponse = authService.registerProducer(request);
-        setAuthCookie(httpResponse, authResponse.getToken());
-        return ResponseEntity.ok(authResponse);
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<?> login(
-            @Valid @RequestBody AuthRequest request,
-            HttpServletResponse httpResponse) {
-        AuthResponse authResponse = authService.login(request);
-        setAuthCookie(httpResponse, authResponse.getToken());
-        return ResponseEntity.ok(authResponse);
+        try {
+            AuthResponse authResponse = authService.registerProducer(request);
+            setAuthCookie(httpResponse, authResponse.getToken());
+            return ResponseEntity.ok(authResponse);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("RegisterProducer error: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error interno. Intenta de nuevo."));
+        }
     }
 
     @PostMapping("/forgot-password")
