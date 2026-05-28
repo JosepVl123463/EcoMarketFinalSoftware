@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 
 export interface User {
   id: string;
@@ -20,29 +20,24 @@ interface AuthState {
   logout: () => void;
 }
 
-// sessionStorage: más seguro que localStorage (se borra al cerrar el tab, no se comparte entre tabs).
-// En producción el backend también emite httpOnly cookie como segunda capa de seguridad.
-const sessionStore = createJSONStorage(() =>
-  typeof window !== 'undefined' ? sessionStorage : localStorage
-);
-
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
       token: null,
       isAuthenticated: false,
-      setAuth: (user, token) => set({ user, token, isAuthenticated: true }),
-      logout: () => set({ user: null, token: null, isAuthenticated: false }),
+      setAuth: (user, token) => {
+        localStorage.setItem('eco_access_token', token);
+        set({ user, token, isAuthenticated: true });
+      },
+      logout: () => {
+        localStorage.removeItem('eco_access_token');
+        set({ user: null, token: null, isAuthenticated: false });
+      },
     }),
     {
       name: 'ecomarket-auth',
-      storage: sessionStore,
-      partialize: (state) => ({
-        user: state.user,
-        token: state.token,
-        isAuthenticated: state.isAuthenticated,
-      }),
+      partialize: (state) => ({ user: state.user, token: state.token, isAuthenticated: state.isAuthenticated }),
     }
   )
 );

@@ -17,38 +17,35 @@ public class DataInitializer implements ApplicationRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    // Credenciales fijas del administrador principal
-    private static final String ADMIN_EMAIL    = "admin@ecomarket.pe";
-    private static final String ADMIN_PASSWORD = "Admin123";
-    private static final String ADMIN_NAME     = "Administrador Principal";
-
     @Override
     public void run(ApplicationArguments args) {
         upsertAdmin();
     }
 
     private void upsertAdmin() {
-        String hash = passwordEncoder.encode(ADMIN_PASSWORD);
+        String email    = "admin@ecomarket.pe";
+        String password = "123456789";
+        String hash     = passwordEncoder.encode(password);
 
-        userRepository.findByEmail(ADMIN_EMAIL).ifPresentOrElse(
+        userRepository.findByEmail(email).ifPresentOrElse(
             existing -> {
                 existing.setProviderId(hash);
                 existing.setRole("admin");
-                existing.setFullName(ADMIN_NAME);
+                existing.setFullName("Administrador Principal");
                 userRepository.save(existing);
-                log.info("=== ADMIN ACTUALIZADO === email: {} | password: {}", ADMIN_EMAIL, ADMIN_PASSWORD);
+                log.info("Admin actualizado: {} / {}", email, password);
             },
             () -> {
                 var admin = User.builder()
-                        .email(ADMIN_EMAIL)
-                        .fullName(ADMIN_NAME)
+                        .email(email)
+                        .fullName("Administrador Principal")
                         .provider("email")
                         .providerId(hash)
                         .role("admin")
                         .ecoScore(999)
                         .build();
                 userRepository.save(admin);
-                log.info("=== ADMIN CREADO === email: {} | password: {}", ADMIN_EMAIL, ADMIN_PASSWORD);
+                log.info("Admin creado: {} / {}", email, password);
             }
         );
     }

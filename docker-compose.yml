@@ -79,16 +79,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ecomarket_db
       SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: ecomarket_password
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-1x0000000000000000000000000000000AA}
-      ADMIN_EMAIL: admin@ecomarket.pe
-      ADMIN_PASSWORD: 123456789
     networks:
       - ecomarket-net
     depends_on:
       - postgres
-      - redis
 
   product-service:
     build:

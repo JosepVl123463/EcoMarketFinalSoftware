@@ -48,8 +48,6 @@ public class SecurityConfig {
                     "/api/auth/register",
                     "/api/auth/register/**",
                     "/api/auth/google",
-                    "/api/auth/logout",
-                    "/api/auth/forgot-password",
                     "/actuator/health"
                 ).permitAll()
                 // All other endpoints require authentication
@@ -69,13 +67,8 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        var allowedOrigins = System.getenv("CORS_ALLOWED_ORIGINS");
-        var origins = allowedOrigins != null
-            ? List.of(allowedOrigins.split(","))
-            : List.of("http://localhost:3000", "https://ecomarket.pe");
-
         var config = new CorsConfiguration();
-        config.setAllowedOrigins(origins);
+        config.setAllowedOrigins(List.of("http://localhost:3000", "https://ecomarket.pe"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
