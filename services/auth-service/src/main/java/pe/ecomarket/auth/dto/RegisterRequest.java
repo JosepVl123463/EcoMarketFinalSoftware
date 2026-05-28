@@ -26,7 +26,4 @@ public class RegisterRequest {
     private String password;
 
     private String role; // 'customer' or 'provider'
-
-    @NotBlank(message = "Token de verificación requerido")
-    private String turnstileToken;
 }

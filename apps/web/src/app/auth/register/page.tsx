@@ -8,7 +8,6 @@ import { useAuthStore } from '@/store/authStore';
 import { Leaf, Eye, EyeOff, Loader2, CheckCircle2, Building2, User, Mail, Phone, ArrowRight, ArrowLeft, Check, ShieldAlert, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PasswordStrengthBar } from '@/components/auth/PasswordStrengthBar';
-import { TurnstileWidget } from '@/components/auth/TurnstileWidget';
 
 const ROLES = [
   { value: 'customer', label: 'Consumidor', desc: 'Comprar productos orgánicos' },
@@ -31,7 +30,6 @@ function RegisterForm() {
   const [rucValidated, setRucValidated] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isRegisteredPending, setIsRegisteredPending] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState('');
 
   // Form State
   const [form, setForm] = useState({
@@ -147,14 +145,9 @@ function RegisterForm() {
         return;
       }
 
-      if (!turnstileToken) {
-        setError('Completa la verificación de seguridad.');
-        return;
-      }
-
       setLoading(true);
       try {
-        const data = await authService.register(form.email, form.password, form.fullName, form.phone, turnstileToken);
+        const data = await authService.register(form.email, form.password, form.fullName, form.phone);
         const registeredUser = {
           id: data.userId,
           email: data.email,
@@ -201,11 +194,6 @@ function RegisterForm() {
         return;
       }
 
-      if (!turnstileToken) {
-        setError('Completa la verificación de seguridad.');
-        return;
-      }
-
       setLoading(true);
       try {
         const producerData = {
@@ -218,7 +206,6 @@ function RegisterForm() {
           telefonoCorporativo: form.telefonoCorporativo,
           emailEmpresarial: form.emailEmpresarial,
           representanteLegal: form.representanteLegal,
-          turnstileToken,
         };
         await authService.registerProducer(producerData);
         setIsRegisteredPending(true);
@@ -440,16 +427,11 @@ function RegisterForm() {
             <PasswordStrengthBar password={form.password} />
           </div>
 
-          <TurnstileWidget
-            onSuccess={(token) => setTurnstileToken(token)}
-            onError={() => setError('Error en verificación de seguridad. Recarga la página.')}
-          />
-
           {/* Submit */}
           <button
             id="register-submit-btn"
             type="submit"
-            disabled={loading || !turnstileToken}
+            disabled={loading}
             className="w-full bg-[#1A3C34] text-white py-4 rounded-2xl font-bold text-base hover:bg-green-800 transition disabled:opacity-60 flex items-center justify-center gap-2 shadow-sm"
           >
             {loading ? <Loader2 size={20} className="animate-spin" /> : 'Crear mi cuenta gratis'}
@@ -675,11 +657,6 @@ function RegisterForm() {
                   </span>
                 </label>
 
-                <TurnstileWidget
-                  onSuccess={(token) => setTurnstileToken(token)}
-                  onError={() => setError('Error en verificación de seguridad. Recarga la página.')}
-                />
-
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
@@ -691,7 +668,7 @@ function RegisterForm() {
                   </button>
                   <button
                     type="submit"
-                    disabled={loading || !turnstileToken}
+                    disabled={loading}
                     className="bg-[#1A3C34] text-white py-4 rounded-2xl font-bold text-base hover:bg-green-800 transition disabled:opacity-60 flex items-center justify-center gap-2"
                   >
                     {loading ? <Loader2 size={18} className="animate-spin" /> : 'Finalizar Registro'}

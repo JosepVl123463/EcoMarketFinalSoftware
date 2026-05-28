@@ -9,7 +9,6 @@ import { sanitizeEmail, sanitizePassword } from '@/lib/sanitize';
 import { Logo } from '@/components/Logo';
 import { Eye, EyeOff, Loader2, AlertCircle, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { TurnstileWidget } from '@/components/auth/TurnstileWidget';
 
 function LoginForm() {
   const router = useRouter();
@@ -19,7 +18,6 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [turnstileToken, setTurnstileToken] = useState('');
   const [, startTransition] = useTransition();
 
   const handleSubmit = useCallback(
@@ -38,14 +36,10 @@ function LoginForm() {
         setError('Ingresa un email válido.');
         return;
       }
-      if (!turnstileToken) {
-        setError('Completa la verificación de seguridad.');
-        return;
-      }
 
       setLoading(true);
       try {
-        const data = await authService.login(email, password, turnstileToken);
+        const data = await authService.login(email, password);
         const user = {
           id: data.userId,
           email: data.email,
@@ -58,28 +52,26 @@ function LoginForm() {
         const redirect = searchParams.get('redirect') ?? (user.role === 'admin' ? '/admin' : '/');
         startTransition(() => router.push(redirect));
       } catch (err: unknown) {
-        const axiosError = err as { response?: { status?: number; data?: { error?: string; message?: string } }; code?: string };
+        const axiosError = err as { response?: { status?: number; data?: { error?: string } }; code?: string };
         const status = axiosError?.response?.status;
         const apiError = axiosError?.response?.data?.error;
 
-        if (!status || axiosError?.code === 'ERR_NETWORK' || axiosError?.code === 'ECONNREFUSED') {
+        if (!status || axiosError?.code === 'ERR_NETWORK') {
           setError('No se pudo conectar al servidor. Verifica que el backend esté corriendo.');
         } else if (status === 429) {
           setError(apiError || 'Demasiados intentos. Espera 5 minutos antes de reintentar.');
-        } else if (status === 403) {
-          setError('Verificación de seguridad fallida. Recarga la página e inténtalo de nuevo.');
         } else if (status === 400) {
           setError('Datos inválidos. Verifica el email y la contraseña.');
         } else if (status === 401 || status === 404) {
           setError('Credenciales incorrectas. Verifica tu email y contraseña.');
         } else {
-          setError(apiError || 'Error inesperado. Intenta de nuevo.');
+          setError(apiError || 'Credenciales incorrectas. Intenta de nuevo.');
         }
       } finally {
         setLoading(false);
       }
     },
-    [form, router, searchParams, setAuth, turnstileToken]
+    [form, router, searchParams, setAuth]
   );
 
   return (
@@ -159,15 +151,10 @@ function LoginForm() {
         </Link>
       </div>
 
-      <TurnstileWidget
-        onSuccess={(token) => setTurnstileToken(token)}
-        onError={() => setError('Error en verificación de seguridad. Recarga la página.')}
-      />
-
       <button
         id="login-submit-btn"
         type="submit"
-        disabled={loading || !turnstileToken}
+        disabled={loading}
         className="w-full bg-[var(--primary)] text-white py-4 rounded-2xl font-bold hover:opacity-90 transition disabled:opacity-60 flex items-center justify-center gap-2"
       >
         {loading ? <Loader2 size={20} className="animate-spin" /> : 'Ingresar'}
