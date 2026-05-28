@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/authStore';
 import { Leaf, Eye, EyeOff, Loader2, CheckCircle2, Building2, User, Mail, Phone, ArrowRight, ArrowLeft, Check, ShieldAlert, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PasswordStrengthBar } from '@/components/auth/PasswordStrengthBar';
+import { TurnstileWidget } from '@/components/auth/TurnstileWidget';
 
 const ROLES = [
   { value: 'customer', label: 'Consumidor', desc: 'Comprar productos orgánicos' },
@@ -31,6 +32,7 @@ function RegisterForm() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isRegisteredPending, setIsRegisteredPending] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
 
   // Form State
   const [form, setForm] = useState({
@@ -118,39 +120,14 @@ function RegisterForm() {
     setStep(prev => Math.max(1, prev - 1));
   };
 
-  // Google OAuth Login / Register for consumers
+  // Google OAuth — requiere configuración de GOOGLE_CLIENT_ID en el servidor
   const handleGoogleLogin = () => {
     if (role === 'provider') {
       toast.error('El registro con Google es exclusivo para consumidores. Los productores deben pasar validación fiscal RUC.');
       return;
     }
-    setGoogleLoading(true);
-    setLoading(true);
-    toast.loading('Registrando y conectando con Google OAuth...', { id: 'google-oauth' });
-    setTimeout(() => {
-      setLoading(false);
-      setGoogleLoading(false);
-      const googleUser = {
-        id: `google-user-98765`,
-        email: 'josep.garate@gmail.com',
-        fullName: 'Josep Vladimir Garate Quispe',
-        role: 'customer' as const,
-        ecoScore: 120,
-        avatarUrl: '/IMG/cepillo_bambu.png',
-        authMethod: 'google' as const,
-      };
-      
-      // Persistir consumidor registrado en localStorage
-      const localUsers = JSON.parse(localStorage.getItem('ecomarket-users') || '[]');
-      if (!localUsers.find((u: any) => u.email === googleUser.email)) {
-        localUsers.push(googleUser);
-        localStorage.setItem('ecomarket-users', JSON.stringify(localUsers));
-      }
-
-      setAuth(googleUser, 'google-oauth-token-ecomarket');
-      toast.success('¡Cuenta creada e inicio de sesión con Google exitoso! Bienvenido 🌿', { id: 'google-oauth' });
-      router.push('/');
-    }, 1200);
+    void googleLoading; // referencia para evitar lint warning
+    toast.error('Registro con Google no disponible. Usa email y contraseña.');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -172,9 +149,14 @@ function RegisterForm() {
         return;
       }
 
+      if (!turnstileToken) {
+        setError('Completa la verificación de seguridad.');
+        return;
+      }
+
       setLoading(true);
       try {
-        const data = await authService.register(form.email, form.password, form.fullName, form.phone);
+        const data = await authService.register(form.email, form.password, form.fullName, form.phone, turnstileToken);
         const registeredUser = {
           id: data.userId,
           email: data.email,
@@ -184,34 +166,19 @@ function RegisterForm() {
           ecoScore: data.ecoScore ?? 0,
           authMethod: 'email' as const,
         };
-
-        // Persistir en base de datos local
-        const localUsers = JSON.parse(localStorage.getItem('ecomarket-users') || '[]');
-        localUsers.push(registeredUser);
-        localStorage.setItem('ecomarket-users', JSON.stringify(localUsers));
-
         setAuth(registeredUser, data.token);
         toast.success('¡Cuenta creada exitosamente! Bienvenido a Ecomarket 🌿');
         router.push('/');
-      } catch {
-        // Fallback en modo demo local
-        const demoUser = {
-          id: `demo-${Date.now()}`,
-          email: form.email,
-          fullName: form.fullName,
-          phone: form.phone,
-          role: 'customer' as const,
-          ecoScore: 50,
-          authMethod: 'email' as const,
-        };
-
-        const localUsers = JSON.parse(localStorage.getItem('ecomarket-users') || '[]');
-        localUsers.push(demoUser);
-        localStorage.setItem('ecomarket-users', JSON.stringify(localUsers));
-
-        setAuth(demoUser, 'demo-token-ecomarket');
-        toast.success('¡Cuenta demo creada! 🌿');
-        router.push('/');
+      } catch (err: unknown) {
+        const axiosError = err as { response?: { status?: number; data?: { error?: string } } };
+        const status = axiosError?.response?.status;
+        if (status === 403) {
+          setError('Verificación de seguridad fallida. Recarga la página e inténtalo de nuevo.');
+        } else if (status === 409) {
+          setError('Ya existe una cuenta con ese email. Intenta iniciar sesión.');
+        } else {
+          setError('Error al crear la cuenta. Verifica tus datos e inténtalo de nuevo.');
+        }
       } finally {
         setLoading(false);
       }
@@ -234,6 +201,11 @@ function RegisterForm() {
         return;
       }
 
+      if (!turnstileToken) {
+        setError('Completa la verificación de seguridad.');
+        return;
+      }
+
       setLoading(true);
       try {
         const producerData = {
@@ -245,49 +217,20 @@ function RegisterForm() {
           direccionFiscal: form.direccionFiscal,
           telefonoCorporativo: form.telefonoCorporativo,
           emailEmpresarial: form.emailEmpresarial,
-          representanteLegal: form.representanteLegal
+          representanteLegal: form.representanteLegal,
+          turnstileToken,
         };
         await authService.registerProducer(producerData);
-        
-        // Persistir la solicitud de productor en localStorage
-        const pendingProducers = JSON.parse(localStorage.getItem('ecomarket-pending-producers') || '[]');
-        pendingProducers.push({
-          ...producerData,
-          id: `prod-${Date.now()}`,
-          verified: false,
-          ecoCertified: false,
-          registeredAt: new Date().toISOString().slice(0, 10)
-        });
-        localStorage.setItem('ecomarket-pending-producers', JSON.stringify(pendingProducers));
-
         setIsRegisteredPending(true);
-        toast.success('¡Solicitud corporativa registrada y pendiente de verificación! 🌿');
-      } catch {
-        // Fallback demo local
-        const producerData = {
-          email: form.emailEmpresarial,
-          password: form.password,
-          fullName: form.representanteLegal,
-          ruc: form.ruc,
-          businessName: form.businessName,
-          direccionFiscal: form.direccionFiscal,
-          telefonoCorporativo: form.telefonoCorporativo,
-          emailEmpresarial: form.emailEmpresarial,
-          representanteLegal: form.representanteLegal
-        };
-
-        const pendingProducers = JSON.parse(localStorage.getItem('ecomarket-pending-producers') || '[]');
-        pendingProducers.push({
-          ...producerData,
-          id: `prod-${Date.now()}`,
-          verified: false,
-          ecoCertified: false,
-          registeredAt: new Date().toISOString().slice(0, 10)
-        });
-        localStorage.setItem('ecomarket-pending-producers', JSON.stringify(pendingProducers));
-
-        setIsRegisteredPending(true);
-        toast.success('¡Solicitud corporativa registrada (Modo Demo)! 🌿');
+        toast.success('¡Solicitud corporativa registrada y pendiente de verificación!');
+      } catch (err: unknown) {
+        const axiosError = err as { response?: { status?: number; data?: { error?: string } } };
+        const status = axiosError?.response?.status;
+        if (status === 403) {
+          setError('Verificación de seguridad fallida. Recarga la página e inténtalo de nuevo.');
+        } else {
+          setError('Error al registrar la solicitud. Verifica tus datos e inténtalo de nuevo.');
+        }
       } finally {
         setLoading(false);
       }
@@ -496,11 +439,16 @@ function RegisterForm() {
             <PasswordStrengthBar password={form.password} />
           </div>
 
+          <TurnstileWidget
+            onSuccess={(token) => setTurnstileToken(token)}
+            onError={() => setError('Error en verificación de seguridad. Recarga la página.')}
+          />
+
           {/* Submit */}
           <button
             id="register-submit-btn"
             type="submit"
-            disabled={loading}
+            disabled={loading || !turnstileToken}
             className="w-full bg-[#1A3C34] text-white py-4 rounded-2xl font-bold text-base hover:bg-green-800 transition disabled:opacity-60 flex items-center justify-center gap-2 shadow-sm"
           >
             {loading ? <Loader2 size={20} className="animate-spin" /> : 'Crear mi cuenta gratis'}
@@ -726,6 +674,11 @@ function RegisterForm() {
                   </span>
                 </label>
 
+                <TurnstileWidget
+                  onSuccess={(token) => setTurnstileToken(token)}
+                  onError={() => setError('Error en verificación de seguridad. Recarga la página.')}
+                />
+
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
@@ -737,7 +690,7 @@ function RegisterForm() {
                   </button>
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || !turnstileToken}
                     className="bg-[#1A3C34] text-white py-4 rounded-2xl font-bold text-base hover:bg-green-800 transition disabled:opacity-60 flex items-center justify-center gap-2"
                   >
                     {loading ? <Loader2 size={18} className="animate-spin" /> : 'Finalizar Registro'}

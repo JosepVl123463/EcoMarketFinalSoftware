@@ -27,17 +27,18 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       isAuthenticated: false,
       setAuth: (user, token) => {
-        localStorage.setItem('eco_access_token', token);
+        // Token guardado solo en memoria (Zustand), NO en localStorage
+        // El backend también emite httpOnly cookie como capa de seguridad adicional
         set({ user, token, isAuthenticated: true });
       },
       logout: () => {
-        localStorage.removeItem('eco_access_token');
         set({ user: null, token: null, isAuthenticated: false });
       },
     }),
     {
       name: 'ecomarket-auth',
-      partialize: (state) => ({ user: state.user, token: state.token, isAuthenticated: state.isAuthenticated }),
+      // Solo persistir datos del usuario, NUNCA el token (evita XSS via localStorage)
+      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
     }
   )
 );

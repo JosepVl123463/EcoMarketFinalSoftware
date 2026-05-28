@@ -15,4 +15,7 @@ public class AuthRequest {
     @NotBlank(message = "La contraseña es requerida")
     @Size(min = 6, message = "La contraseña debe tener mínimo 6 caracteres")
     private String password;
+
+    @NotBlank(message = "Token de verificación requerido")
+    private String turnstileToken;
 }

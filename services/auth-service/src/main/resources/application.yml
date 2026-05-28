@@ -20,6 +20,16 @@ spring:
 server:
   port: ${PORT:8081}
 
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
 jwt:
   secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
   expiration: 86400000
+
+turnstile:
+  secret-key: ${TURNSTILE_SECRET_KEY:1x0000000000000000000000000000000AA}
+  verify-url: https://challenges.cloudflare.com/turnstile/v0/siteverify

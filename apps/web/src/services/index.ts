@@ -67,15 +67,15 @@ export const productService = {
 };
 
 export const authService = {
-  login: async (email: string, password: string) => {
-    const { data } = await api.post('/api/auth/login', { email, password });
-    return data; // { token, user }
-  },
-  register: async (email: string, password: string, fullName: string, phone?: string) => {
-    const { data } = await api.post('/api/auth/register', { email, password, fullName, phone });
+  login: async (email: string, password: string, turnstileToken: string) => {
+    const { data } = await api.post('/api/auth/login', { email, password, turnstileToken });
     return data;
   },
-  registerProducer: async (producerData: any) => {
+  register: async (email: string, password: string, fullName: string, phone?: string, turnstileToken?: string) => {
+    const { data } = await api.post('/api/auth/register', { email, password, fullName, phone, turnstileToken });
+    return data;
+  },
+  registerProducer: async (producerData: Record<string, unknown>) => {
     const { data } = await api.post('/api/auth/register/producer', producerData);
     return data;
   },

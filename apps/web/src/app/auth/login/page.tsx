@@ -9,6 +9,7 @@ import { sanitizeEmail, sanitizePassword } from '@/lib/sanitize';
 import { Logo } from '@/components/Logo';
 import { Eye, EyeOff, Loader2, AlertCircle, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { TurnstileWidget } from '@/components/auth/TurnstileWidget';
 
 function LoginForm() {
   const router = useRouter();
@@ -17,8 +18,8 @@ function LoginForm() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
   const [, startTransition] = useTransition();
 
   const handleSubmit = useCallback(
@@ -33,15 +34,18 @@ function LoginForm() {
         setError('Por favor completa todos los campos.');
         return;
       }
-      // Modo demo: permite el usuario admin sin formato email
-      if (email !== 'admin' && !/\S+@\S+\.\S+/.test(email)) {
+      if (!/\S+@\S+\.\S+/.test(email)) {
         setError('Ingresa un email válido.');
+        return;
+      }
+      if (!turnstileToken) {
+        setError('Completa la verificación de seguridad.');
         return;
       }
 
       setLoading(true);
       try {
-        const data = await authService.login(email, password);
+        const data = await authService.login(email, password, turnstileToken);
         const user = {
           id: data.userId,
           email: data.email,
@@ -53,7 +57,6 @@ function LoginForm() {
         toast.success(`¡Bienvenido de vuelta, ${user.fullName?.split(' ')[0]}!`);
         const redirect = searchParams.get('redirect') ?? (user.role === 'admin' ? '/admin' : '/');
         startTransition(() => router.push(redirect));
-        return;
       } catch (err: unknown) {
         const axiosError = err as { response?: { status?: number; data?: { error?: string } } };
         const status = axiosError?.response?.status;
@@ -61,87 +64,17 @@ function LoginForm() {
 
         if (status === 429) {
           setError(apiError || 'Demasiados intentos. Espera 5 minutos antes de reintentar.');
-          setLoading(false);
-          return;
+        } else if (status === 403) {
+          setError('Verificación de seguridad fallida. Recarga la página e inténtalo de nuevo.');
+        } else {
+          setError('Credenciales incorrectas. Intenta de nuevo.');
         }
-
-        // Demo / fallback para recuperar funcionalidad de UI
-        const isAdminCredentials =
-          (email === 'admin' || email === 'admin@ecomarket.pe') && password === '123456789';
-
-        if (isAdminCredentials) {
-          const adminUser = {
-            id: '99999999-9999-9999-9999-999999999999',
-            email: form.email,
-            fullName: 'Administrador Principal',
-            role: 'admin' as const,
-            ecoScore: 999,
-          };
-          setAuth(adminUser, 'demo-token-admin');
-          toast.success('¡Bienvenido, Administrador (Modo Seguro)! 👑');
-          const redirect = searchParams.get('redirect') ?? '/admin';
-          router.push(redirect);
-          setLoading(false);
-          return;
-        }
-
-        // Cualquier password >= 6 habilita demo customer
-        if (password.length >= 6) {
-          const demoUser = {
-            id: 'demo-user',
-            email: form.email,
-            fullName: 'Usuario Demo',
-            role: 'customer' as const,
-            ecoScore: 120,
-          };
-          setAuth(demoUser, 'demo-token-ecomarket');
-          toast.success('¡Bienvenido al modo demo! 🌿');
-          router.push('/');
-          setLoading(false);
-          return;
-        }
-
-        setError('Credenciales incorrectas. Intenta de nuevo.');
       } finally {
         setLoading(false);
       }
     },
-    [form, router, searchParams, setAuth]
+    [form, router, searchParams, setAuth, turnstileToken]
   );
-
-  const handleGoogle = useCallback(() => {
-    setGoogleLoading(true);
-    setLoading(true);
-    setError('');
-    toast.loading('Conectando con Google OAuth...', { id: 'google-oauth' });
-    setTimeout(() => {
-      setLoading(false);
-      setGoogleLoading(false);
-      
-      // Creamos o recuperamos la sesión de Google guardándola en localStorage para consistencia
-      const googleUser = {
-        id: 'google-user-98765',
-        email: 'josep.garate@gmail.com',
-        fullName: 'Josep Vladimir Garate Quispe',
-        role: 'customer' as const,
-        ecoScore: 120,
-        avatarUrl: '/IMG/cepillo_bambu.png',
-        authMethod: 'google' as const,
-      };
-      
-      // Guardar en base de datos local temporal para simular persistencia premium
-      const localUsers = JSON.parse(localStorage.getItem('ecomarket-users') || '[]');
-      const userExists = localUsers.find((u: any) => u.email === googleUser.email);
-      if (!userExists) {
-        localUsers.push(googleUser);
-        localStorage.setItem('ecomarket-users', JSON.stringify(localUsers));
-      }
-
-      setAuth(googleUser, 'google-oauth-token-ecomarket');
-      toast.success('¡Sesión iniciada con Google! Bienvenido 🌿', { id: 'google-oauth' });
-      router.push('/');
-    }, 1000);
-  }, [router, setAuth]);
 
   return (
     <form id="login-form" onSubmit={handleSubmit} className="bg-[var(--surface)] rounded-[2rem] p-8 border border-[var(--border)] shadow-sm space-y-5">
@@ -154,9 +87,8 @@ function LoginForm() {
 
       <button
         type="button"
-        onClick={handleGoogle}
-        disabled={loading || googleLoading}
-        className="w-full bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] py-3.5 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-3 hover:opacity-90 transition disabled:opacity-70"
+        disabled
+        className="w-full bg-[var(--surface)] border border-[var(--border)] text-[var(--text-muted)] py-3.5 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-3 opacity-50 cursor-not-allowed"
       >
         <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden>
           <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v3.92h6.69a5.74 5.74 0 0 1-2.49 3.77v3.12h3.99c2.33-2.14 3.66-5.3 3.66-8.74z" />
@@ -164,8 +96,7 @@ function LoginForm() {
           <path fill="#FBBC05" d="M5.45 14.33a7.14 7.14 0 0 1 0-4.66V6.45H1.47a11.96 11.96 0 0 0 0 11.1l3.98-3.22z" />
           <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.22 0 12 0 7.46 0 3.48 3.7 1.47 7.68l3.98 3.22c.92-2.77 3.5-4.83 6.55-4.83z" />
         </svg>
-        {googleLoading ? <Loader2 size={18} className="animate-spin text-[#4285F4]" /> : null}
-        <span>{googleLoading ? 'Conectando...' : 'Iniciar sesión con Google'}</span>
+        <span>Iniciar sesión con Google</span>
       </button>
 
       <p className="text-[10px] text-[var(--text-muted)] flex items-center gap-1 justify-center -mt-2">
@@ -222,10 +153,15 @@ function LoginForm() {
         </Link>
       </div>
 
+      <TurnstileWidget
+        onSuccess={(token) => setTurnstileToken(token)}
+        onError={() => setError('Error en verificación de seguridad. Recarga la página.')}
+      />
+
       <button
         id="login-submit-btn"
         type="submit"
-        disabled={loading}
+        disabled={loading || !turnstileToken}
         className="w-full bg-[var(--primary)] text-white py-4 rounded-2xl font-bold hover:opacity-90 transition disabled:opacity-60 flex items-center justify-center gap-2"
       >
         {loading ? <Loader2 size={20} className="animate-spin" /> : 'Ingresar'}

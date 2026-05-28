@@ -4,12 +4,13 @@ const isProd = process.env.NODE_ENV === 'production';
 
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com https://www.gstatic.com https://cdnjs.cloudflare.com",
+  // unsafe-eval eliminado; unsafe-inline requerido por Next.js hydration inline scripts
+  "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://cdnjs.cloudflare.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self'",
-  "connect-src 'self' http://localhost:8000 https://ecomarket.pe https://api.stripe.com",
-  "frame-src https://js.stripe.com https://www.google.com",
+  "connect-src 'self' http://localhost:8000 https://ecomarket.pe https://api.stripe.com https://challenges.cloudflare.com",
+  "frame-src https://js.stripe.com https://challenges.cloudflare.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

@@ -2,6 +2,7 @@ package pe.ecomarket.auth.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -15,11 +16,15 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * Intercepts every request, extracts and validates the JWT from the Authorization header.
+ * Extrae y valida el JWT desde:
+ *  1. Header Authorization: Bearer <token>  (cross-origin / desarrollo)
+ *  2. Cookie httpOnly eco_access_token       (mismo dominio / producción)
  */
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
+
+    private static final String COOKIE_NAME = "eco_access_token";
 
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
@@ -28,16 +33,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        final String authHeader = request.getHeader("Authorization");
+        String token = extractToken(request);
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (token == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        final String token = authHeader.substring(7);
         final String email;
-
         try {
             email = jwtUtil.extractEmail(token);
         } catch (Exception e) {
@@ -57,5 +60,25 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private String extractToken(HttpServletRequest request) {
+        // 1. Authorization header (desarrollo cross-origin)
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+
+        // 2. httpOnly cookie (producción mismo dominio)
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (COOKIE_NAME.equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+
+        return null;
     }
 }

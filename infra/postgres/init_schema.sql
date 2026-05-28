@@ -144,11 +144,11 @@ CREATE TABLE payment_splits (
 -- Seed Data
 
 -- 1. Usuarios
+-- Contraseña de todos los usuarios: 123456789 (BCrypt strength 12)
 INSERT INTO users (id, email, full_name, provider, provider_id, role, eco_score) VALUES
-('11111111-1111-1111-1111-111111111111', 'josep.garate@ecomarket.pe', 'Josep Garate', 'email', '$2a$10$X.xGq58H3Z8J0d2w9S9r6.j0h9u1R2E4S5U6I7O8P9A0D1F2G3H4J', 'admin', 900),
-('22222222-2222-2222-2222-222222222222', 'proveedor.bio@ecomarket.pe', 'EcoShop', 'email', '$2a$10$X.xGq58H3Z8J0d2w9S9r6.j0h9u1R2E4S5U6I7O8P9A0D1F2G3H4J', 'provider', 500),
-('99999999-9999-9999-9999-999999999999', 'admin', 'Administrador Principal', 'email', '$2a$10$X.xGq58H3Z8J0d2w9S9r6.j0h9u1R2E4S5U6I7O8P9A0D1F2G3H4J', 'admin', 999),
-('88888888-8888-8888-8888-888888888888', 'admin@ecomarket.pe', 'Administrador Principal', 'email', '$2a$10$X.xGq58H3Z8J0d2w9S9r6.j0h9u1R2E4S5U6I7O8P9A0D1F2G3H4J', 'admin', 999);
+('11111111-1111-1111-1111-111111111111', 'josep.garate@ecomarket.pe', 'Josep Garate', 'email', '$2b$12$pPrbIbV6l6uusWE.qTpTCuvIyZ.1TXKYrAMcU.VDPyvphxX7QXUVm', 'admin', 900),
+('22222222-2222-2222-2222-222222222222', 'proveedor.bio@ecomarket.pe', 'EcoShop', 'email', '$2b$12$PHOKrXnBEpMrbVfRh9QRL.GGPjJdFTlCq3baqmjVCf/50I4RQJJmC', 'provider', 500),
+('88888888-8888-8888-8888-888888888888', 'admin@ecomarket.pe', 'Administrador Principal', 'email', '$2b$12$pPrbIbV6l6uusWE.qTpTCuvIyZ.1TXKYrAMcU.VDPyvphxX7QXUVm', 'admin', 999);
 
 -- 2. Proveedor
 INSERT INTO providers (id, user_id, business_name, ruc, verified, eco_certified) VALUES
