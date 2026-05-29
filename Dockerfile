@@ -16,6 +16,8 @@ RUN mvn package -DskipTests -q
 FROM python:3.11-slim AS build-python
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    libfreetype6-dev \
+    libjpeg62-turbo-dev \
     && rm -rf /var/lib/apt/lists/*
 COPY services/audit-service/requirements.txt /tmp/audit-req.txt
 COPY services/ai-engine/requirements.txt /tmp/ai-req.txt
