@@ -40,8 +40,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && pip install --no-cache-dir supervisor \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copy Python deps from build stage
+# Copy Python deps and executables from build stage
 COPY --from=build-python /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=build-python /usr/local/bin/uvicorn /usr/local/bin/uvicorn
 
 # Copy Java JARs
 COPY --from=build-auth /app/target/*.jar /app/auth-service.jar
