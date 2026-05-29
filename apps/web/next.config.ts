@@ -1,6 +1,8 @@
 import type { NextConfig } from 'next';
 
 const isProd = process.env.NODE_ENV === 'production';
+const isVercel = !!process.env.VERCEL;
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 const csp = [
   "default-src 'self'",
@@ -8,7 +10,7 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self'",
-  "connect-src 'self' http://localhost:8000 https://ecomarket.pe https://api.stripe.com",
+  `connect-src 'self' ${apiUrl} http://localhost:8000 https://ecomarket.pe https://api.stripe.com`,
   "frame-src https://js.stripe.com https://www.google.com",
   "object-src 'none'",
   "base-uri 'self'",
@@ -19,7 +21,7 @@ const csp = [
 ].join('; ');
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  output: isVercel ? undefined : 'standalone',
   poweredByHeader: false,
   compress: true,
   reactStrictMode: true,

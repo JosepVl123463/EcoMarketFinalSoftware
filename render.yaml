@@ -1,13 +1,6 @@
 services:
-  # ── Frontend Web (Next.js) ────────────────────────────────
-  - type: web
-    name: ecomarket-web
-    env: docker
-    region: us
-    dockerfilePath: ./apps/web/Dockerfile
-    envVars:
-      - key: NEXT_PUBLIC_API_URL
-        value: "https://ecomarket-gateway.onrender.com"
+  # Frontend (Next.js) is deployed separately on Vercel.
+  # Set Root Directory = apps/web and NEXT_PUBLIC_API_URL in the Vercel dashboard.
 
   # ── API Gateway ──────────────────────────────────────────
   - type: web
