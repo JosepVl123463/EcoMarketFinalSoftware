@@ -15,6 +15,7 @@ services:
     env: node
     region: us
     rootDir: infra/cloud-gateway
+    startCommand: node index.js
     healthCheckPath: /api/products/health
     envVars:
       - key: AUTH_URL
@@ -158,7 +159,6 @@ services:
     env: docker
     region: us
     dockerfilePath: ./services/audit-service/Dockerfile
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PORT
         value: "8084"
