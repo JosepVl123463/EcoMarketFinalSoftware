@@ -188,6 +188,9 @@ services:
     rootDir: services/ai-engine
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://ecomarket-web.onrender.com"
 
   # ── Notification Service (Python/FastAPI) ──────────────
   - type: web
@@ -197,3 +200,6 @@ services:
     rootDir: services/notification-service
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://ecomarket-web.onrender.com"

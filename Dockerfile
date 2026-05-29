@@ -14,7 +14,9 @@ RUN mvn package -DskipTests -q
 
 # ─── Stage 3: Install Python deps ──────────────────────
 FROM python:3.11-slim AS build-python
-RUN apt-get update && apt-get install -y build-essential libcairo2-dev pkg-config && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 COPY services/audit-service/requirements.txt /tmp/audit-req.txt
 COPY services/ai-engine/requirements.txt /tmp/ai-req.txt
 COPY services/notification-service/requirements.txt /tmp/notif-req.txt
@@ -26,15 +28,13 @@ COPY services/payment-service/package.json /tmp/payment/package.json
 RUN cd /tmp/payment && npm install --omit=dev
 
 # ─── Stage 5: Final image ──────────────────────────────
+# Uses Debian Bookworm nodejs (18.x) to avoid nodesource curl-bash failures.
 FROM python:3.11-slim
 
-# Install runtimes
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openjdk-17-jre-headless \
-    curl \
-    build-essential libcairo2-dev pkg-config \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs \
+    nodejs \
+    npm \
     && pip install --no-cache-dir supervisor \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
