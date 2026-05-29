@@ -32,7 +32,7 @@ RUN cd /tmp/payment && npm install --omit=dev
 FROM python:3.11-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openjdk-17-jre-headless \
+    openjdk-21-jre-headless \
     nodejs \
     npm \
     && pip install --no-cache-dir supervisor \
