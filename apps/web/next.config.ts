@@ -4,19 +4,33 @@ const isProd = process.env.NODE_ENV === 'production';
 const isVercel = !!process.env.VERCEL;
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+// connect-src solo incluye localhost en desarrollo (fuera de producción).
+const connectSrc = [
+  "'self'",
+  apiUrl,
+  'https://api.stripe.com',
+  ...(isProd ? [] : ['http://localhost:8000']),
+].join(' ');
+
+// Nota de seguridad: se elimina 'unsafe-eval' (ninguna dependencia lo requiere).
+// 'unsafe-inline' se mantiene por ahora porque el runtime de Next.js (hidratación)
+// y el script de tema inyectan scripts en línea; el siguiente paso de endurecimiento
+// es migrar a CSP basada en nonce vía middleware. Aun así, esta CSP ya bloquea eval,
+// orígenes externos no confiables y el embebido en iframes (frame-ancestors 'none').
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com https://www.gstatic.com https://cdnjs.cloudflare.com",
+  "script-src 'self' 'unsafe-inline' https://www.google.com https://www.gstatic.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self'",
-  `connect-src 'self' ${apiUrl} http://localhost:8000 https://ecomarket.pe https://api.stripe.com`,
+  `connect-src ${connectSrc}`,
   "frame-src https://js.stripe.com https://www.google.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
-  "worker-src 'self' blob: https://cdnjs.cloudflare.com",
+  "worker-src 'self' blob:",
+  "manifest-src 'self'",
   "upgrade-insecure-requests",
 ].join('; ');
 

@@ -40,11 +40,15 @@ public class AuthService {
             throw new IllegalArgumentException("El email ya está registrado.");
         }
 
+        // El registro público SIEMPRE crea usuarios con rol "customer".
+        // El rol nunca se toma del cuerpo de la petición: permitirlo habilitaría
+        // que cualquiera se registrara como "admin" (escalada de privilegios).
+        // Los roles "provider"/"admin" se asignan por flujos protegidos propios.
         var user = User.builder()
                 .email(email)
                 .fullName(inputSanitizer.sanitizeText(request.getFullName(), 255))
                 .provider("email")
-                .role(request.getRole() != null ? request.getRole() : "customer")
+                .role("customer")
                 .build();
 
         // Store hashed password in providerId field (adapter pattern for the existing schema)

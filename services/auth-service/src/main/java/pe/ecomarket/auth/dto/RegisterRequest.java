@@ -25,5 +25,9 @@ public class RegisterRequest {
     @Size(min = 8, message = "La contraseña debe tener mínimo 8 caracteres")
     private String password;
 
-    private String role; // 'customer' or 'provider'
+    // NOTA DE SEGURIDAD: este campo se IGNORA en el registro público. El rol
+    // siempre se fija en "customer" en el servidor (ver AuthService.register).
+    // Se conserva solo por compatibilidad de deserialización de clientes antiguos.
+    @Deprecated
+    private String role;
 }

@@ -118,39 +118,26 @@ function RegisterForm() {
     setStep(prev => Math.max(1, prev - 1));
   };
 
-  // Google OAuth Login / Register for consumers
-  const handleGoogleLogin = () => {
+  // Registro con Google (solo consumidores). Requiere OAuth real validado en el
+  // servidor; nunca se concede sesión desde el cliente.
+  const handleGoogleLogin = async () => {
     if (role === 'provider') {
       toast.error('El registro con Google es exclusivo para consumidores. Los productores deben pasar validación fiscal RUC.');
       return;
     }
     setGoogleLoading(true);
-    setLoading(true);
-    toast.loading('Registrando y conectando con Google OAuth...', { id: 'google-oauth' });
-    setTimeout(() => {
-      setLoading(false);
-      setGoogleLoading(false);
-      const googleUser = {
-        id: `google-user-98765`,
-        email: 'josep.garate@gmail.com',
-        fullName: 'Josep Vladimir Garate Quispe',
-        role: 'customer' as const,
-        ecoScore: 120,
-        avatarUrl: '/IMG/cepillo_bambu.png',
-        authMethod: 'google' as const,
-      };
-      
-      // Persistir consumidor registrado en localStorage
-      const localUsers = JSON.parse(localStorage.getItem('ecomarket-users') || '[]');
-      if (!localUsers.find((u: any) => u.email === googleUser.email)) {
-        localUsers.push(googleUser);
-        localStorage.setItem('ecomarket-users', JSON.stringify(localUsers));
+    try {
+      const url = await authService.getGoogleAuthUrl();
+      if (url) {
+        window.location.href = url;
+        return;
       }
-
-      setAuth(googleUser, 'google-oauth-token-ecomarket');
-      toast.success('¡Cuenta creada e inicio de sesión con Google exitoso! Bienvenido 🌿', { id: 'google-oauth' });
-      router.push('/');
-    }, 1200);
+      toast.error('El registro con Google no está disponible por ahora.');
+    } catch {
+      toast.error('El registro con Google no está disponible por ahora.');
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -185,33 +172,22 @@ function RegisterForm() {
           authMethod: 'email' as const,
         };
 
-        // Persistir en base de datos local
-        const localUsers = JSON.parse(localStorage.getItem('ecomarket-users') || '[]');
-        localUsers.push(registeredUser);
-        localStorage.setItem('ecomarket-users', JSON.stringify(localUsers));
-
         setAuth(registeredUser, data.token);
         toast.success('¡Cuenta creada exitosamente! Bienvenido a Ecomarket 🌿');
         router.push('/');
-      } catch {
-        // Fallback en modo demo local
-        const demoUser = {
-          id: `demo-${Date.now()}`,
-          email: form.email,
-          fullName: form.fullName,
-          phone: form.phone,
-          role: 'customer' as const,
-          ecoScore: 50,
-          authMethod: 'email' as const,
-        };
-
-        const localUsers = JSON.parse(localStorage.getItem('ecomarket-users') || '[]');
-        localUsers.push(demoUser);
-        localStorage.setItem('ecomarket-users', JSON.stringify(localUsers));
-
-        setAuth(demoUser, 'demo-token-ecomarket');
-        toast.success('¡Cuenta demo creada! 🌿');
-        router.push('/');
+      } catch (err: unknown) {
+        // El registro lo resuelve el backend. Si falla, se informa el error;
+        // nunca se crea una sesión local (evita cuentas falsas en el cliente).
+        const axiosError = err as { response?: { status?: number; data?: { error?: string } } };
+        const status = axiosError?.response?.status;
+        const apiError = axiosError?.response?.data?.error;
+        if (status === 409) {
+          setError(apiError || 'Este email ya está registrado.');
+        } else if (status === 429) {
+          setError('Demasiados intentos. Espera unos minutos e inténtalo de nuevo.');
+        } else {
+          setError('No se pudo completar el registro. Inténtalo más tarde.');
+        }
       } finally {
         setLoading(false);
       }
@@ -247,47 +223,21 @@ function RegisterForm() {
           emailEmpresarial: form.emailEmpresarial,
           representanteLegal: form.representanteLegal
         };
+        // El registro y la persistencia son responsabilidad del backend.
+        // No se guardan datos de la empresa —ni la contraseña— en el navegador.
         await authService.registerProducer(producerData);
-        
-        // Persistir la solicitud de productor en localStorage
-        const pendingProducers = JSON.parse(localStorage.getItem('ecomarket-pending-producers') || '[]');
-        pendingProducers.push({
-          ...producerData,
-          id: `prod-${Date.now()}`,
-          verified: false,
-          ecoCertified: false,
-          registeredAt: new Date().toISOString().slice(0, 10)
-        });
-        localStorage.setItem('ecomarket-pending-producers', JSON.stringify(pendingProducers));
 
         setIsRegisteredPending(true);
         toast.success('¡Solicitud corporativa registrada y pendiente de verificación! 🌿');
-      } catch {
-        // Fallback demo local
-        const producerData = {
-          email: form.emailEmpresarial,
-          password: form.password,
-          fullName: form.representanteLegal,
-          ruc: form.ruc,
-          businessName: form.businessName,
-          direccionFiscal: form.direccionFiscal,
-          telefonoCorporativo: form.telefonoCorporativo,
-          emailEmpresarial: form.emailEmpresarial,
-          representanteLegal: form.representanteLegal
-        };
-
-        const pendingProducers = JSON.parse(localStorage.getItem('ecomarket-pending-producers') || '[]');
-        pendingProducers.push({
-          ...producerData,
-          id: `prod-${Date.now()}`,
-          verified: false,
-          ecoCertified: false,
-          registeredAt: new Date().toISOString().slice(0, 10)
-        });
-        localStorage.setItem('ecomarket-pending-producers', JSON.stringify(pendingProducers));
-
-        setIsRegisteredPending(true);
-        toast.success('¡Solicitud corporativa registrada (Modo Demo)! 🌿');
+      } catch (err: unknown) {
+        const axiosError = err as { response?: { status?: number; data?: { error?: string } } };
+        const status = axiosError?.response?.status;
+        const apiError = axiosError?.response?.data?.error;
+        if (status === 409) {
+          setError(apiError || 'El RUC o el email empresarial ya están registrados.');
+        } else {
+          setError('No se pudo registrar la solicitud. Inténtalo más tarde.');
+        }
       } finally {
         setLoading(false);
       }

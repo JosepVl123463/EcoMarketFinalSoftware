@@ -48,11 +48,24 @@ public class ProductService {
     }
 
     /**
-     * Get a single product by ID.
+     * Get a single product by ID (uso interno; no filtra por estado).
      */
     public Product getProductById(UUID id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado: " + id));
+    }
+
+    /**
+     * Obtiene un producto para acceso PÚBLICO: solo si está APROBADO. Si está
+     * pendiente o rechazado, se trata como no encontrado para no filtrar datos
+     * (incluido el motivo de rechazo) a usuarios no autorizados.
+     */
+    public Product getPublicProductById(UUID id) {
+        var product = getProductById(id);
+        if (!"APPROVED".equalsIgnoreCase(product.getStatus())) {
+            throw new IllegalArgumentException("Producto no encontrado: " + id);
+        }
+        return product;
     }
 
     /**

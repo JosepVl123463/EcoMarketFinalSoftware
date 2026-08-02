@@ -135,12 +135,10 @@ export default function CheckoutPage() {
       setOrderId(order.orderId);
       setStep('payment');
       toast.success('Pedido registrado. Selecciona tu método de pago local.');
-    } catch (err) {
-      // Fallback order ID for offline demo
-      const demoOrderId = `ORD-${Date.now().toString().substring(6)}`;
-      setOrderId(demoOrderId);
-      setStep('payment');
-      toast.success('Modo Demo: Pedido registrado localmente 🌿');
+    } catch {
+      // Sin pedido real no se puede continuar al pago. No se generan pedidos
+      // ficticios en el cliente (evita compras sin respaldo en el backend).
+      toast.error('No se pudo registrar el pedido. Inténtalo de nuevo en unos minutos.');
     } finally {
       setLoading(false);
     }
@@ -197,20 +195,26 @@ export default function CheckoutPage() {
       }
     }
 
+    if (!orderId) {
+      toast.error('No hay un pedido válido. Vuelve al paso anterior.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const finalOrderId = orderId || `ORD-${Date.now().toString().substring(6)}`;
-      const finalAmount = total;
+      // El monto NO se envía desde el cliente: el backend lo recalcula a partir
+      // del pedido para evitar manipulación de precios (ver payment-service).
       const paymentDetails = {
-        cardNum: method === 'card' ? cardNum.replace(/\s/g, '') : undefined,
+        // No se transmite el PAN completo ni el CVV; para tarjeta se delega en el
+        // proveedor de pagos. Aquí solo se envían identificadores no sensibles.
         yapePhone: method === 'yape' ? yapePhone : undefined,
         plinPhone: method === 'plin' ? plinPhone : undefined,
         tupayBank: method === 'tupay' ? tupayBank : undefined,
         cipCode: method === 'tupay' ? cipCode : undefined,
       };
 
-      console.log(`Enviando pago a payment-service: orderId=${finalOrderId}, method=${method}, amount=${finalAmount}`);
-      const res = await paymentService.processLocalPayment(finalOrderId, method, paymentDetails, finalAmount);
-      
+      const res = await paymentService.processLocalPayment(orderId, method, paymentDetails);
+
       if (res.success) {
         setTransactionRef(res.transactionRef);
         setUsedMethod(method);
@@ -218,18 +222,11 @@ export default function CheckoutPage() {
         clearCart();
         toast.success('¡Transacción exitosa! 🌿');
       } else {
-        toast.error(res.error || 'Error al procesar el pago local.');
+        toast.error(res.error || 'Error al procesar el pago.');
       }
-    } catch (err) {
-      console.warn('Servicio de pagos fuera de línea o error HTTP, ejecutando simulación premium exitosa.');
-      // Beautiful local simulation for demonstration
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      const demoTxnRef = `TXN-${method.toUpperCase()}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-      setTransactionRef(demoTxnRef);
-      setUsedMethod(method);
-      setStep('success');
-      clearCart();
-      toast.success('¡Pago Procesado Exitosamente (Demo)! 🌿');
+    } catch {
+      // Un fallo del servicio de pagos NUNCA debe mostrarse como éxito.
+      toast.error('No se pudo procesar el pago. No se realizó ningún cargo. Inténtalo de nuevo.');
     } finally {
       setLoading(false);
     }

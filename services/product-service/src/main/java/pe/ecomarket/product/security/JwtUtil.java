@@ -12,7 +12,10 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.secret:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}")
+    // Sin valor por defecto: si JWT_SECRET no está configurado, el servicio no
+    // arranca (fail-fast). Antes había un secreto embebido que permitía a
+    // cualquiera con acceso al repositorio firmar tokens válidos.
+    @Value("${jwt.secret}")
     private String secretKey;
 
     private Key getSigningKey() {
@@ -26,6 +29,10 @@ public class JwtUtil {
 
     public String extractUserId(String token) {
         return parseClaims(token).get("userId", String.class);
+    }
+
+    public String extractRole(String token) {
+        return parseClaims(token).get("role", String.class);
     }
 
     public boolean isTokenValid(String token) {

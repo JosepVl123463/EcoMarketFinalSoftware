@@ -85,6 +85,13 @@ public class OrderService {
         var order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Orden no encontrada: " + orderId));
 
+        // Idempotencia: si la orden ya está pagada, no se vuelve a descontar el
+        // stock. Sin esto, reenviar la confirmación descontaba inventario varias
+        // veces por el mismo pedido.
+        if ("paid".equalsIgnoreCase(order.getStatus())) {
+            return;
+        }
+
         order.setStatus("paid");
         order.setPaidAt(java.time.OffsetDateTime.now());
         orderRepository.save(order);
@@ -98,5 +105,11 @@ public class OrderService {
 
     public List<Order> getCustomerOrders(UUID customerId) {
         return orderRepository.findByCustomerIdOrderByCreatedAtDesc(customerId);
+    }
+
+    /** Consulta interna de un pedido por su identificador. */
+    public Order getOrder(UUID orderId) {
+        return orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Orden no encontrada: " + orderId));
     }
 }

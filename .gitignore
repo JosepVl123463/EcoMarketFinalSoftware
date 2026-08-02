@@ -38,3 +38,7 @@ logs/
 data/
 mongo_data/
 postgres_data/
+
+# Python bytecode
+__pycache__/
+*.pyc

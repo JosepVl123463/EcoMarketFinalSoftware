@@ -19,7 +19,9 @@ import java.util.UUID;
 @AllArgsConstructor
 public class CreateProductRequest {
 
-    @NotNull(message = "El ID del proveedor es obligatorio.")
+    // El proveedor se asigna en el servidor a partir del usuario autenticado
+    // (ver ProductController.createProduct); cualquier valor recibido aquí se
+    // sobrescribe, por eso ya no es obligatorio ni de confianza.
     private UUID providerId;
 
     @NotBlank(message = "El nombre del producto es obligatorio.")

@@ -84,6 +84,16 @@ export const authService = {
     const { data } = await api.post('/api/auth/google', { token: googleToken });
     return data; // { token, user }
   },
+  // Devuelve la URL de autorización de Google si el backend la expone; null si no
+  // está configurado. Nunca concede sesión desde el cliente.
+  getGoogleAuthUrl: async (): Promise<string | null> => {
+    try {
+      const { data } = await api.get('/api/auth/google/url');
+      return data?.url ?? null;
+    } catch {
+      return null;
+    }
+  },
   getMe: async () => {
     const { data } = await api.get('/api/auth/me');
     return data;
@@ -99,8 +109,9 @@ export const paymentService = {
     const { data } = await api.post('/api/orders', { items });
     return data; // { orderId, totalAmount }
   },
-  processLocalPayment: async (orderId: string, method: string, paymentDetails: any, amount: number) => {
-    const { data } = await api.post('/api/payments/process-local', { orderId, method, paymentDetails, amount });
+  processLocalPayment: async (orderId: string, method: string, paymentDetails: Record<string, unknown>) => {
+    // El monto lo determina el backend a partir del pedido; no se envía desde el cliente.
+    const { data } = await api.post('/api/payments/process-local', { orderId, method, paymentDetails });
     return data; // { success, transactionRef, method }
   },
 };

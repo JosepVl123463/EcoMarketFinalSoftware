@@ -20,6 +20,9 @@ spring:
 server:
   port: ${PORT:8081}
 
+# El secreto JWT NO tiene valor por defecto: debe inyectarse por variable de
+# entorno JWT_SECRET. Si falta, el servicio no arranca (fail-fast). Así se evita
+# que un secreto embebido en el repositorio permita firmar tokens válidos.
 jwt:
-  secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+  secret: ${JWT_SECRET}
   expiration: 86400000

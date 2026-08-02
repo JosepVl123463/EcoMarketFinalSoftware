@@ -11,14 +11,27 @@ const SERVICES = [
   { prefix: '/api/orders',   host: process.env.PRODUCT_URL  || 'localhost', port: process.env.PRODUCT_PORT  || '8082' },
 ];
 
+// Lista blanca de orígenes permitidos (CORS_ALLOWED_ORIGINS separada por comas).
+// Antes se reflejaba cualquier Origin recibido junto con credenciales, lo que
+// permitía a cualquier sitio hacer peticiones autenticadas contra la API.
+const ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:3000,https://ecomarket.pe')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 function corsHeaders(origin) {
-  return {
-    'Access-Control-Allow-Origin': origin || '*',
+  const headers = {
     'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Requested-With',
     'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Max-Age': '86400',
+    'Vary': 'Origin',
   };
+  // Solo se refleja el Origin si está en la lista blanca.
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    headers['Access-Control-Allow-Origin'] = origin;
+  }
+  return headers;
 }
 
 const server = http.createServer((req, res) => {

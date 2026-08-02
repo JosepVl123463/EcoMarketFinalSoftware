@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Suspense } from 'react';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
@@ -17,6 +17,32 @@ export const metadata: Metadata = {
   title: 'EcoMarket | El Marketplace de Confianza Ética',
   description: 'Descubre productos 100% auditados, veganos y sostenibles.',
   keywords: ['ecomarket', 'productos ecológicos', 'vegano', 'sostenible'],
+  applicationName: 'EcoMarket',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'EcoMarket',
+  },
+  icons: {
+    icon: [
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [{ url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
+  },
+};
+
+// El viewport es imprescindible para una experiencia responsive real en móvil:
+// sin él, los navegadores móviles renderizan la página a ancho de escritorio.
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#1A3C34' },
+    { media: '(prefers-color-scheme: dark)', color: '#0F4D2A' },
+  ],
 };
 
 const themeScript = `

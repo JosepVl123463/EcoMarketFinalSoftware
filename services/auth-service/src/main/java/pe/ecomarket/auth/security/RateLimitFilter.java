@@ -68,10 +68,19 @@ public class RateLimitFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 
+    // Solo se confía en X-Forwarded-For cuando el servicio está detrás de un
+    // proxy/gateway de confianza (TRUST_PROXY=true). En caso contrario un
+    // atacante podría enviar un XFF distinto en cada petición y evadir por
+    // completo el límite de intentos (fuerza bruta ilimitada).
+    private static final boolean TRUST_PROXY =
+            Boolean.parseBoolean(System.getenv().getOrDefault("TRUST_PROXY", "false"));
+
     private String resolveClientKey(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
+        if (TRUST_PROXY) {
+            String forwarded = request.getHeader("X-Forwarded-For");
+            if (forwarded != null && !forwarded.isBlank()) {
+                return forwarded.split(",")[0].trim();
+            }
         }
         return request.getRemoteAddr();
     }

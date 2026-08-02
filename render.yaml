@@ -78,7 +78,7 @@ services:
       - key: SPRING_DATASOURCE_PASSWORD
         sync: false
       - key: JWT_SECRET
-        value: "ecomarket-jwt-production-secret-2026"
+        sync: false
       - key: CORS_ALLOWED_ORIGINS
         value: "https://ecomarket-web.onrender.com"
 
@@ -98,7 +98,13 @@ services:
       - key: SPRING_DATASOURCE_PASSWORD
         sync: false
       - key: JWT_SECRET
-        value: "ecomarket-jwt-production-secret-2026"
+        sync: false
+      # Secreto compartido para autenticar llamadas internas (confirmar pago).
+      - key: INTERNAL_SERVICE_SECRET
+        sync: false
+      # true solo si el servicio está detrás del gateway (para X-Forwarded-For).
+      - key: TRUST_PROXY
+        value: "true"
       - key: AUDIT_SERVICE_URL
         value: https://ecomarket-audit-service.onrender.com
       - key: CORS_ALLOWED_ORIGINS
@@ -122,7 +128,10 @@ services:
       - key: STRIPE_CANCEL_URL
         value: "https://ecomarket-web.onrender.com/cart"
       - key: JWT_SECRET
-        value: "ecomarket-jwt-production-secret-2026"
+        sync: false
+      # Mismo secreto interno que product-service y notification-service.
+      - key: INTERNAL_SERVICE_SECRET
+        sync: false
       - key: PRODUCT_SERVICE_HOST
         fromService:
           type: web
@@ -156,6 +165,9 @@ services:
       - key: PORT
         value: "8084"
       - key: MONGO_URI
+        sync: false
+      # Verificación de JWT para endpoints de auditoría (aprobar/rechazar).
+      - key: JWT_SECRET
         sync: false
       - key: AI_ENGINE_HOST
         fromService:
@@ -203,3 +215,6 @@ services:
     envVars:
       - key: CORS_ALLOWED_ORIGINS
         value: "https://ecomarket-web.onrender.com"
+      # Mismo secreto interno que payment-service para autorizar el envío.
+      - key: INTERNAL_SERVICE_SECRET
+        sync: false

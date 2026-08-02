@@ -50,11 +50,12 @@ services:
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_ADMIN_ERROR_LOG: /dev/stderr
-      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      # Admin API enlazada solo a loopback dentro del contenedor y NO publicada
+      # al host: evita que la API de administración de Kong quede expuesta.
+      KONG_ADMIN_LISTEN: 127.0.0.1:8001
     ports:
       - "8000:8000"
       - "8443:8443"
-      - "8001:8001"
     volumes:
       - ./infra/kong/kong.yml:/etc/kong/kong.yml
     networks:
@@ -79,6 +80,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ecomarket_db
       SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: ecomarket_password
+      # Secretos SOLO para desarrollo local. En producción se inyectan por el
+      # gestor de secretos (sync:false en render.yaml). NUNCA reutilizar estos.
+      JWT_SECRET: ${JWT_SECRET:-ZGV2LW9ubHktZWNvbWFya2V0LWp3dC1zZWNyZXQtMzJieXRlcy1taW4hIQ==}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-ChangeMe_Dev_123!}
     networks:
       - ecomarket-net
     depends_on:
@@ -95,6 +100,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ecomarket_db
       SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: ecomarket_password
+      JWT_SECRET: ${JWT_SECRET:-ZGV2LW9ubHktZWNvbWFya2V0LWp3dC1zZWNyZXQtMzJieXRlcy1taW4hIQ==}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-ZGV2LW9ubHktaW50ZXJuYWwtc2VydmljZS1zZWNyZXQtY2hhbmdlLW1l}
     networks:
       - ecomarket-net
     depends_on:
@@ -111,6 +118,10 @@ services:
       - ./services/payment-service/.env
     environment:
       PRODUCT_SERVICE_URL: http://product-service:8082
+      JWT_SECRET: ${JWT_SECRET:-ZGV2LW9ubHktZWNvbWFya2V0LWp3dC1zZWNyZXQtMzJieXRlcy1taW4hIQ==}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-ZGV2LW9ubHktaW50ZXJuYWwtc2VydmljZS1zZWNyZXQtY2hhbmdlLW1l}
+      # Pagos simulados SOLO en local. En producción esta bandera no debe existir.
+      PAYMENTS_DEMO_MODE: "true"
     networks:
       - ecomarket-net
 
@@ -121,6 +132,9 @@ services:
     container_name: ecomarket-audit-service
     ports:
       - "8084:8084"
+    environment:
+      MONGO_URI: mongodb://admin:mongo_password@mongodb:27017
+      JWT_SECRET: ${JWT_SECRET:-ZGV2LW9ubHktZWNvbWFya2V0LWp3dC1zZWNyZXQtMzJieXRlcy1taW4hIQ==}
     networks:
       - ecomarket-net
     depends_on:
@@ -145,6 +159,8 @@ services:
     container_name: ecomarket-notification-service
     ports:
       - "8086:8086"
+    environment:
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-ZGV2LW9ubHktaW50ZXJuYWwtc2VydmljZS1zZWNyZXQtY2hhbmdlLW1l}
     networks:
       - ecomarket-net
 

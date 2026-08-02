@@ -1,0 +1,911 @@
+\documentclass[10pt,a4paper,twocolumn]{article}
+
+% ─── Encoding & fonts ────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% ─── Language ────────────────────────────────────────────────────
+\usepackage[spanish,english]{babel}
+
+% ─── Page geometry ───────────────────────────────────────────────
+\usepackage[top=2.5cm, bottom=2.5cm, left=2cm, right=2cm,
+            columnsep=0.6cm]{geometry}
+
+% ─── Colour palette ──────────────────────────────────────────────
+\usepackage[dvipsnames,table]{xcolor}
+\definecolor{ecogreen}{RGB}{22,101,52}
+\definecolor{ecolightgreen}{RGB}{187,247,208}
+\definecolor{ecoteal}{RGB}{15,118,110}
+\definecolor{ecogray}{RGB}{75,85,99}
+\definecolor{ecobg}{RGB}{240,253,244}
+\definecolor{ecored}{RGB}{185,28,28}
+\definecolor{ecoyellow}{RGB}{180,120,0}
+\definecolor{codeblue}{RGB}{37,99,235}
+\definecolor{codebg}{RGB}{248,250,252}
+
+% ─── Graphics & diagrams ─────────────────────────────────────────
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit,
+                backgrounds, shadows.blur, calc, decorations.markings}
+
+% ─── Tables ──────────────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{array}
+
+% ─── Code listings ───────────────────────────────────────────────
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{codeblue}\bfseries,
+  commentstyle=\color{ecogray}\itshape,
+  stringstyle=\color{ecored},
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{ecogray!40},
+  breaklines=true,
+  numbers=left,
+  numberstyle=\tiny\color{ecogray},
+  xleftmargin=1.2em,
+  framexleftmargin=1.2em,
+  captionpos=b
+}
+
+% ─── Hyperlinks ──────────────────────────────────────────────────
+\usepackage[colorlinks=true,
+            linkcolor=ecogreen,
+            citecolor=ecoteal,
+            urlcolor=ecoteal,
+            pdftitle={EcoMarket: A Microservices-Based E-Commerce Platform},
+            pdfauthor={Josep Vladimir Garate Quispe}]{hyperref}
+\usepackage{url}
+
+% ─── Section styling ─────────────────────────────────────────────
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries\color{ecogreen}}
+  {\thesection.}{0.5em}{}[\vspace{-2pt}\color{ecogreen}\rule{\linewidth}{0.6pt}]
+\titleformat{\subsection}{\normalsize\bfseries\color{ecoteal}}
+  {\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}{\small\bfseries\color{ecogray}}
+  {\thesubsubsection}{0.5em}{}
+
+% ─── Abstract box ────────────────────────────────────────────────
+\usepackage{abstract}
+\renewcommand{\abstractnamefont}{\bfseries\color{ecogreen}}
+\renewcommand{\abstracttextfont}{\small\itshape}
+
+% ─── Float control ───────────────────────────────────────────────
+\usepackage{float}
+\usepackage{caption}
+\captionsetup{font=small, labelfont={bf,color=ecoteal}, skip=4pt}
+
+% ─── Misc ────────────────────────────────────────────────────────
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{mdframed}
+\usepackage{multicol}
+
+% ─── Header / footer ─────────────────────────────────────────────
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{ecogreen}\leaders\hrule height \headrulewidth\hfill}}
+\fancyhead[L]{\small\textcolor{ecogray}{EcoMarket — Taller de Software, UNA-Puno}}
+\fancyhead[R]{\small\textcolor{ecogray}{\thepage}}
+
+% ═══════════════════════════════════════════════════════════════════
+%  TITLE
+% ═══════════════════════════════════════════════════════════════════
+\title{%
+  \vspace{-1cm}%
+  {\color{ecogreen}\large\bfseries\scshape SoftwareX — Academic Report}\\[4pt]
+  \rule{\linewidth}{1.5pt}\\[8pt]
+  {\LARGE\bfseries EcoMarket: A Microservices-Based\\[4pt]
+   E-Commerce Platform for Ecological Products\\[4pt]
+   with AI-Driven Chemical Auditing}\\[6pt]
+  \rule{\linewidth}{1.5pt}
+}
+
+\author{%
+  \textbf{Josep Vladimir Garate Quispe}\\
+  \small Facultad de Ingeniería Estadística e Informática\\
+  \small Universidad Nacional del Altiplano, Puno, Perú\\[4pt]
+  \small \href{mailto:josep.garate@est.unap.edu.pe}{\texttt{josep.garate@est.unap.edu.pe}}\\[6pt]
+  \small\textbf{Course:} Taller de Software \quad
+  \small\textbf{Instructor:} Torres Cruz Fred
+}
+
+\date{\small June 2026}
+
+% ═══════════════════════════════════════════════════════════════════
+%  DOCUMENT
+% ═══════════════════════════════════════════════════════════════════
+\begin{document}
+
+\twocolumn[
+  \maketitle
+  \vspace{-0.3cm}
+  \begin{@twocolumnfalse}
+    \begin{abstract}
+      EcoMarket is a comprehensive e-commerce platform tailored for the Puno
+      region of Peru. It connects local ecological and organic producers directly
+      with environmentally conscious consumers through a scalable microservices
+      architecture. The platform integrates an AI-based chemical auditing engine
+      that analyzes product ingredients, assigns a quantitative Eco-Score
+      (0--100), generates color-coded ecological badges, and produces
+      tamper-proof PDF certificates anchored with SHA-256 hashes on an
+      immutable MongoDB ledger. The system is built with Next.js 16 (PWA
+      frontend), Java Spring Boot, Python FastAPI, and Node.js Express as
+      backend services, PostgreSQL and MongoDB as databases, Kong as API
+      gateway, and is containerized with Docker. Native Peruvian payment
+      methods (Yape, Plin, TuPay) and international Stripe payments are
+      supported. The platform is deployed on Vercel (frontend) and Render
+      (backend services) and is publicly accessible at
+      \href{https://eco-market-final-software-s2w6.vercel.app}{\texttt{eco-market-final-software-s2w6.vercel.app}}.
+      Source code is available at
+      \href{https://github.com/JosepVl123463/EcoMarketFinalSoftware}{\texttt{github.com/JosepVl123463/EcoMarketFinalSoftware}}
+      under the MIT License.
+    \end{abstract}
+    \vspace{0.3cm}
+    \noindent\textbf{Keywords:}
+    e-commerce; microservices; artificial intelligence; chemical auditing;
+    Next.js; Spring Boot; FastAPI; ecological products; Puno; Perú
+    \vspace{0.5cm}
+    \hrule
+    \vspace{0.4cm}
+  \end{@twocolumnfalse}
+]
+
+% ───────────────────────────────────────────────────────────────────
+\section{Motivation and Significance}
+% ───────────────────────────────────────────────────────────────────
+
+\subsection{Context and Problem Statement}
+
+The high-altitude region of Puno, Peru, sustains rich agricultural
+biodiversity — native quinoa, cañihua, native potatoes, and a wide
+range of organic products. Despite this potential, producers face two
+persistent barriers: (1) limited access to digital markets and heavy
+reliance on intermediaries that compress profit margins, and (2) widespread
+consumer distrust caused by unverifiable ``ecological'' product claims.
+
+EcoMarket was created to address both barriers simultaneously by providing
+a vertically integrated platform: direct-to-consumer digital commerce
+combined with algorithmic ecological certification.
+
+\subsection{Gap in Existing Solutions}
+
+General-purpose e-commerce platforms (Mercado Libre, Amazon) lack
+region-specific ecological focus, local payment method integration,
+and automated chemical verification. EcoMarket fills this gap by
+combining commerce with verifiable AI-based auditing in a single system.
+
+\subsection{Contribution}
+
+The key contributions are: (i) a production-grade microservices
+architecture tailored for Peruvian ecological commerce; (ii) an
+AI chemical auditing engine with a curated database of 11 prohibited
+chemical families; (iii) tamper-proof audit certificates via SHA-256
+immutable hashes; and (iv) integration of local Peruvian payment methods
+alongside international Stripe processing.
+
+% ───────────────────────────────────────────────────────────────────
+\section{Software Description}
+% ───────────────────────────────────────────────────────────────────
+
+\subsection{System Architecture Overview}
+
+EcoMarket follows a domain-driven microservices design. Six backend
+services communicate through a central API Gateway; each service owns
+its data store and exposes a REST API. Figure~\ref{fig:arch} depicts
+the full architecture.
+
+% ─── TikZ architecture diagram ─────────────────────────────────────
+\begin{figure*}[ht]
+\centering
+\begin{tikzpicture}[
+  node distance=0.55cm and 0.7cm,
+  font=\small,
+  box/.style={
+    rectangle, rounded corners=4pt, draw, thick,
+    minimum width=2.3cm, minimum height=0.75cm,
+    text centered, align=center
+  },
+  frontend/.style={box, fill=ecolightgreen!70, draw=ecogreen!80},
+  gateway/.style={box, fill=ecoteal!20, draw=ecoteal, minimum width=4.5cm},
+  service/.style={box, fill=blue!10, draw=codeblue, minimum width=2.2cm},
+  db/.style={
+    cylinder, shape border rotate=90, draw, thick,
+    fill=yellow!15, draw=ecoyellow!80,
+    minimum width=1.4cm, minimum height=0.65cm,
+    text centered, font=\scriptsize
+  },
+  arrow/.style={-{Latex[length=2.5mm]}, thick, color=ecogray},
+  darrow/.style={<->, thick, dashed, color=ecogray!60},
+]
+
+% ── Row 0: Frontend ──────────────────────────────────────────
+\node[frontend, minimum width=7cm] (fe)
+  {\textbf{Frontend — Next.js 16 PWA (Vercel)}\\
+   \scriptsize Catalog · Auth · Checkout · Admin · Producer Dashboard};
+
+% ── Row 1: Gateway ───────────────────────────────────────────
+\node[gateway, below=0.9cm of fe] (gw)
+  {\textbf{API Gateway — Kong / Node.js (:8000)}\\
+   \scriptsize Rate-Limiting · CORS · JWT Routing · Load Balancing};
+
+% ── Row 2: Microservices ──────────────────────────────────────
+\node[service, below left=1.1cm and 2.8cm of gw] (auth)
+  {\textbf{Auth}\\
+   \scriptsize Spring Boot\\
+   \scriptsize :8081};
+
+\node[service, below left=1.1cm and 0.7cm of gw] (product)
+  {\textbf{Product}\\
+   \scriptsize Spring Boot\\
+   \scriptsize :8082};
+
+\node[service, below right=1.1cm and 0.7cm of gw] (payment)
+  {\textbf{Payment}\\
+   \scriptsize Node.js\\
+   \scriptsize :8083};
+
+\node[service, below right=1.1cm and 2.8cm of gw] (audit)
+  {\textbf{Audit}\\
+   \scriptsize FastAPI\\
+   \scriptsize :8084};
+
+% ── Row 3: AI + Notification ─────────────────────────────────
+\node[service, below=1.0cm of audit, fill=purple!10, draw=purple!60] (ai)
+  {\textbf{AI Engine}\\
+   \scriptsize FastAPI\\
+   \scriptsize :8085};
+
+\node[service, below=1.0cm of payment, fill=orange!10, draw=orange!70] (notif)
+  {\textbf{Notification}\\
+   \scriptsize FastAPI\\
+   \scriptsize :8086};
+
+% ── Row 4: Databases ─────────────────────────────────────────
+\node[db, below=0.9cm of auth] (pg1)
+  {PostgreSQL\\Users};
+
+\node[db, below=0.9cm of product] (pg2)
+  {PostgreSQL\\Products};
+
+\node[db, below=0.9cm of audit, fill=green!10, draw=ecogreen!70] (mongo)
+  {MongoDB\\Audits};
+
+\node[db, below=0.9cm of ai, fill=red!8, draw=red!50] (redis)
+  {Redis\\Cache};
+
+% ── Arrows ───────────────────────────────────────────────────
+\draw[arrow] (fe) -- (gw);
+
+\draw[arrow] (gw) -- (auth);
+\draw[arrow] (gw) -- (product);
+\draw[arrow] (gw) -- (payment);
+\draw[arrow] (gw) -- (audit);
+
+\draw[arrow] (payment) -- (notif);
+\draw[arrow] (audit) -- (ai);
+\draw[darrow] (payment) -- (product);
+\draw[darrow] (audit) -- (product);
+
+\draw[arrow] (auth) -- (pg1);
+\draw[arrow] (product) -- (pg2);
+\draw[arrow] (audit) -- (mongo);
+\draw[arrow] (ai) -- (redis);
+
+\end{tikzpicture}
+\caption{EcoMarket microservices architecture. Six domain services communicate
+  through a centralized API Gateway. Arrows indicate primary data-flow direction;
+  dashed bidirectional arrows denote inter-service REST calls.}
+\label{fig:arch}
+\end{figure*}
+
+\subsection{Frontend — Next.js 16 PWA}
+
+The frontend is a Progressive Web Application built with
+Next.js~16, React~19, TypeScript~5, and Tailwind CSS~4.
+State is managed by Zustand~5; server-state is handled by
+React Query~5 with Axios for HTTP communication.
+Key screens include: product catalog with Eco-Score filters,
+producer registration (multi-step), admin audit dashboard,
+and a multi-method checkout. Security features include
+Cloudflare Turnstile CAPTCHA, XSS prevention via DOMPurify,
+JWT Bearer token injection via Axios interceptors, and
+strict CSP headers.
+
+\subsection{Backend Microservices}
+
+\subsubsection{Auth Service — Spring Boot (:8081)}
+
+Handles user registration (customer and producer multi-step flows),
+login, JWT issuance, and role-based access control.
+Key entities: \texttt{User} (id, email, role, ecoScore) and
+\texttt{Provider} (id, userId, ruc, businessName, certification).
+Tokens carry a 24-hour expiration, encoded with HS256.
+Rate limiting is enforced at 30~req/min and 200~req/hour per IP.
+
+\subsubsection{Product Service — Spring Boot (:8082)}
+
+Manages the product catalog, inventory, and orders.
+Core entities: \texttt{Product} (UUID PK, category, status,
+eco\_score CHECK~0--100, images TEXT[]) and \texttt{Order}
+with multi-vendor \texttt{OrderItem} support.
+Products follow a status lifecycle: \texttt{PENDING}
+$\rightarrow$ \texttt{APPROVED} / \texttt{REJECTED}.
+A 15\,\% platform fee is recorded in the
+\texttt{payment\_splits} table for revenue distribution.
+
+\subsubsection{Payment Service — Node.js/Express (:8083)}
+
+Orchestrates all payment flows. For international cards, it creates
+a Stripe Checkout Session and verifies webhook signatures. For local
+methods, it simulates Yape, Plin, and TuPay flows, then calls
+product-service to confirm the order and notification-service to
+push a push notification. Rate limiting is set at 15~payments/min.
+
+\subsubsection{Audit Service — FastAPI/Python (:8084)}
+
+The audit service is the technical centrepiece of EcoMarket.
+It receives product ingredient lists, runs them against an internal
+chemical database of 11 restricted families, computes an Eco-Score,
+assigns ecological badges, and stores an immutable audit record in
+MongoDB. It also generates downloadable PDF certificates
+using ReportLab.
+
+\subsubsection{AI Engine — FastAPI/Python (:8085)}
+
+Provides a mock computer-vision and NLP interface for ingredient
+detection from product images. The architecture is designed to be
+swapped with a production model (e.g., a fine-tuned
+CLIP or BERT-based classifier) without changing the inter-service
+contract.
+
+\subsubsection{Notification Service — FastAPI/Python (:8086)}
+
+A thin dispatcher that formats and delivers push notifications
+(Firebase FCM) on payment confirmation and audit result events.
+
+% ───────────────────────────────────────────────────────────────────
+\section{AI Chemical Auditing Engine}
+% ───────────────────────────────────────────────────────────────────
+
+\subsection{Chemical Database}
+
+The engine encapsulates a curated database of 11 chemical families
+considered incompatible with ecological certification, each with
+aliases, risk level, reason for concern, and regulatory reference
+(Table~\ref{tab:chemicals}).
+
+\begin{table}[H]
+\centering
+\caption{Excerpt of the EcoMarket chemical restriction database.}
+\label{tab:chemicals}
+\renewcommand{\arraystretch}{1.1}
+\scriptsize
+\begin{tabularx}{\columnwidth}{>{\bfseries}l l l}
+\toprule
+Family & Risk & Regulation \\
+\midrule
+\rowcolor{red!8}   Sulfatos (SLS/SLES) & High & CE~1223/2009 Ann.~III \\
+\rowcolor{red!8}   Parabenos           & High & CE~1223/2009 Ann.~V  \\
+\rowcolor{red!8}   Ftalatos            & High & REACH Reg.~1907/2006  \\
+\rowcolor{red!8}   BPA                 & High & CE~10/2011            \\
+\rowcolor{orange!8}Petrolatos          & Med. & COSMOS Standard       \\
+\rowcolor{orange!8}Siliconas           & Med. & ECOCERT Protocol      \\
+\rowcolor{orange!8}Triclosan           & Med. & CE~1223/2009 Ann.~VI  \\
+\rowcolor{orange!8}Formaldehído        & Med. & CE~1223/2009 Ann.~III \\
+\rowcolor{orange!8}Microplásticos      & Med. & EU Plastic Reg.       \\
+\rowcolor{orange!8}Colorantes Azoicos  & Med. & CE~1223/2009 Ann.~IV  \\
+\rowcolor{orange!8}Aluminio            & Med. & EFSA 2008 Report      \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Scoring Algorithm}
+
+The Eco-Score $S$ is computed as:
+\begin{equation}
+  S = \max\!\left(0,\; 100 - \sum_{i} p_i\right)
+\end{equation}
+where $p_i = 25$ for each high-risk ingredient detected and
+$p_i = 10$ for each medium-risk ingredient.
+A product is \textbf{APPROVED} if $S \geq 70$; otherwise
+\textbf{REJECTED}.
+
+\subsection{Badge Assignment Logic}
+
+Figure~\ref{fig:badges} shows the badge assignment thresholds.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[font=\scriptsize, node distance=0.4cm]
+  \tikzset{
+    badge/.style={rectangle, rounded corners=3pt, draw, thick,
+                  minimum width=2.6cm, minimum height=0.5cm,
+                  text centered, fill=ecolightgreen!60, draw=ecogreen}
+  }
+  \node[badge] (b1) {\textbf{Eco-Friendly} \quad $S \geq 90$};
+  \node[badge, below=of b1] (b2) {\textbf{Tóxico-Free} \quad no high-risk};
+  \node[badge, below=of b2] (b3) {\textbf{Vegan} \quad $S \geq 80$};
+  \node[badge, below=of b3] (b4) {\textbf{Cruelty-Free} \quad $S \geq 80$};
+  \node[badge, below=of b4, fill=red!10, draw=ecored]
+    (b5) {\textbf{REJECTED} \quad $S < 70$};
+\end{tikzpicture}
+\caption{Ecological badge assignment thresholds based on Eco-Score.}
+\label{fig:badges}
+\end{figure}
+
+\subsection{Immutability and Certificates}
+
+Each audit record stored in MongoDB carries a SHA-256 hash:
+\begin{lstlisting}[language=Python, caption={Audit hash generation.}]
+raw = f"{product_id}-{provider_id}-
+        {eco_score}-{timestamp}"
+audit_hash = hashlib.sha256(
+               raw.encode()).hexdigest()
+\end{lstlisting}
+Any post-hoc modification of the audit data invalidates the hash,
+providing tamper detection. Approved products can download a
+multi-page PDF certificate (generated with ReportLab) containing
+the audit hash, ingredient table, risk analysis, and a verification
+section, as shown in Figure~\ref{fig:auditflow}.
+
+% ─── TikZ audit workflow ──────────────────────────────────────────
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  node distance=0.45cm,
+  font=\scriptsize,
+  step/.style={
+    rectangle, rounded corners=3pt, draw, thick,
+    minimum width=3.5cm, minimum height=0.55cm,
+    fill=ecobg, draw=ecogreen, text centered
+  },
+  decision/.style={
+    diamond, draw, thick, fill=yellow!15, draw=ecoyellow!80,
+    minimum width=2.2cm, minimum height=0.6cm,
+    inner sep=0pt, text centered, font=\tiny
+  },
+  arr/.style={-{Latex[length=2.5mm]}, thick, color=ecogray}
+]
+  \node[step] (a) {Producer submits product};
+  \node[step, below=of a] (b) {Ingredient list parsed};
+  \node[step, below=of b] (c) {Chemical DB scan};
+  \node[decision, below=0.5cm of c] (d) {$S \geq 70$?};
+  \node[step, below left=0.55cm and 0.8cm of d,
+        fill=ecolightgreen!70, draw=ecogreen] (e)
+    {APPROVED\\Badges assigned};
+  \node[step, below right=0.55cm and 0.8cm of d,
+        fill=red!10, draw=ecored] (f)
+    {REJECTED\\Observaciones};
+  \node[step, below=0.55cm of e, minimum width=3.5cm] (g)
+    {SHA-256 hash stored\\in MongoDB};
+  \node[step, below=of g] (h)
+    {PDF Certificate generated};
+
+  \draw[arr] (a)--(b);
+  \draw[arr] (b)--(c);
+  \draw[arr] (c)--(d);
+  \draw[arr] (d) -- node[left,  font=\tiny]{Yes} (e);
+  \draw[arr] (d) -- node[right, font=\tiny]{No}  (f);
+  \draw[arr] (e)--(g);
+  \draw[arr] (g)--(h);
+\end{tikzpicture}
+\caption{Audit pipeline from product submission to certificate generation.}
+\label{fig:auditflow}
+\end{figure}
+
+% ───────────────────────────────────────────────────────────────────
+\section{Database Architecture}
+% ───────────────────────────────────────────────────────────────────
+
+\subsection{PostgreSQL — Relational Layer}
+
+PostgreSQL hosts the core relational data across six tables
+(Figure~\ref{fig:erd}).
+Notable design decisions: \texttt{products.eco\_score} carries a
+\texttt{CHECK(0--100)} constraint; \texttt{payments.idempotency\_key}
+(UUID UNIQUE) prevents duplicate charges; and
+\texttt{payment\_splits} enforces an 85/15 revenue model at the
+database level.
+
+% ─── TikZ ERD ─────────────────────────────────────────────────────
+\begin{figure*}[ht]
+\centering
+\begin{tikzpicture}[
+  font=\scriptsize,
+  entity/.style={
+    rectangle, draw, thick, rounded corners=3pt,
+    fill=blue!6, draw=codeblue,
+    minimum width=3.0cm,
+    text width=2.8cm,
+    inner sep=4pt
+  },
+  rel/.style={-{Latex[length=2mm]}, thick, color=ecogray}
+]
+
+\node[entity] (users) at (0,0) {
+  \textbf{\color{codeblue}users}\\
+  \rule{\linewidth}{0.4pt}
+  id \textit{(UUID PK)}\\
+  email UNIQUE\\
+  full\_name, phone\\
+  role, eco\_score\\
+  provider, google\_id
+};
+
+\node[entity] (providers) at (4.5,0) {
+  \textbf{\color{codeblue}providers}\\
+  \rule{\linewidth}{0.4pt}
+  id \textit{(UUID PK)}\\
+  user\_id \textit{(FK)}\\
+  business\_name\\
+  ruc UNIQUE\\
+  certification JSONB
+};
+
+\node[entity] (products) at (9,0) {
+  \textbf{\color{codeblue}products}\\
+  \rule{\linewidth}{0.4pt}
+  id \textit{(UUID PK)}\\
+  provider\_id \textit{(FK)}\\
+  name, price, stock\\
+  eco\_score CHECK~0-100\\
+  status, images[]
+};
+
+\node[entity] (orders) at (0,-3.8) {
+  \textbf{\color{codeblue}orders}\\
+  \rule{\linewidth}{0.4pt}
+  id \textit{(UUID PK)}\\
+  customer\_id \textit{(FK)}\\
+  status, total\_amount\\
+  platform\_fee (15\%)\\
+  paid\_at
+};
+
+\node[entity] (order_items) at (4.5,-3.8) {
+  \textbf{\color{codeblue}order\_items}\\
+  \rule{\linewidth}{0.4pt}
+  id \textit{(UUID PK)}\\
+  order\_id \textit{(FK)}\\
+  product\_id \textit{(FK)}\\
+  quantity, unit\_price\\
+  subtotal
+};
+
+\node[entity] (payments) at (9,-3.8) {
+  \textbf{\color{codeblue}payments}\\
+  \rule{\linewidth}{0.4pt}
+  id \textit{(UUID PK)}\\
+  order\_id \textit{(FK)}\\
+  method (yape|plin...)\\
+  idempotency\_key UNIQUE\\
+  amount, status
+};
+
+\draw[rel] (providers.west) -- (users.east)
+  node[midway, above, font=\tiny]{1:1};
+\draw[rel] (products.north west) -- (providers.north east)
+  node[midway, above, font=\tiny]{N:1};
+\draw[rel] (orders.north) -- (users.south)
+  node[midway, left, font=\tiny]{N:1};
+\draw[rel] (order_items.west) -- (orders.east)
+  node[midway, above, font=\tiny]{N:1};
+\draw[rel] (order_items.north) -- (products.south)
+  node[midway, right, font=\tiny]{N:1};
+\draw[rel] (payments.west) -- (orders.east)
+  node[midway, above, font=\tiny]{1:1};
+
+\end{tikzpicture}
+\caption{Entity-relationship diagram for the EcoMarket PostgreSQL schema.
+  Arrows indicate foreign-key direction (many-to-one or one-to-one).}
+\label{fig:erd}
+\end{figure*}
+
+\subsection{MongoDB — Audit Ledger}
+
+The \texttt{ecomarket\_audit} database contains a single
+\texttt{audits} collection. Each document is keyed by
+\texttt{product\_id} and stores the full audit result including
+\texttt{eco\_score}, \texttt{badges}, \texttt{audit\_hash},
+\texttt{status}, and a nested \texttt{details} object with
+per-ingredient analysis and chemical findings. Documents are
+upserted on re-audit, but the original hash is preserved
+in the history array.
+
+% ───────────────────────────────────────────────────────────────────
+\section{Payment Integration}
+% ───────────────────────────────────────────────────────────────────
+
+Figure~\ref{fig:payment} illustrates the two payment paths.
+The \emph{Stripe path} follows the standard Checkout Session
+redirect model and handles webhook signature verification.
+The \emph{local path} covers Yape, Plin, and TuPay with
+simulated QR and OTP flows suitable for demo and future
+real-gateway integration.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  font=\scriptsize,
+  node distance=0.38cm and 0.2cm,
+  box/.style={rectangle, rounded corners=3pt, draw, thick,
+              minimum width=2.8cm, minimum height=0.5cm,
+              text centered, fill=white},
+  arr/.style={-{Latex[length=2mm]}, thick, color=ecogray}
+]
+% Stripe path (left)
+\node[box, fill=blue!8, draw=codeblue] (ss) {Create Stripe Session};
+\node[box, below=of ss] (sc) {Consumer redirected\\to stripe.com};
+\node[box, below=of sc] (sw) {Webhook: \\checkout.session.completed};
+\node[box, below=of sw, fill=ecolightgreen!60, draw=ecogreen] (sconf)
+  {Order Confirmed};
+
+% Local path (right)
+\node[box, right=0.6cm of ss, fill=orange!10, draw=orange!70] (ls)
+  {Select Yape / Plin};
+\node[box, below=of ls] (lq) {QR / Phone\\displayed};
+\node[box, below=of lq] (lp) {POST\\process-local};
+\node[box, below=of lp, fill=ecolightgreen!60, draw=ecogreen] (lconf)
+  {Order Confirmed};
+
+\draw[arr] (ss)--(sc);
+\draw[arr] (sc)--(sw);
+\draw[arr] (sw)--(sconf);
+\draw[arr] (ls)--(lq);
+\draw[arr] (lq)--(lp);
+\draw[arr] (lp)--(lconf);
+
+\node[above=0.1cm of ss, font=\scriptsize\bfseries, color=codeblue]
+  {Stripe (Card)};
+\node[above=0.1cm of ls, font=\scriptsize\bfseries, color=orange!80]
+  {Local (Yape/Plin)};
+\end{tikzpicture}
+\caption{Dual payment flow: Stripe Checkout Session redirect
+  (left) and local Peruvian payment simulation (right).}
+\label{fig:payment}
+\end{figure}
+
+Revenue is split at payment confirmation: providers receive
+85\,\% of the product subtotal; the platform retains 15\,\%,
+recorded in the \texttt{payment\_splits} table for future
+disbursement accounting.
+
+% ───────────────────────────────────────────────────────────────────
+\section{Deployment Architecture}
+% ───────────────────────────────────────────────────────────────────
+
+\subsection{Production Deployment}
+
+The system uses a hybrid cloud deployment strategy
+(Figure~\ref{fig:deploy}):
+
+\begin{itemize}[leftmargin=1.2em, itemsep=2pt]
+  \item \textbf{Frontend:} Vercel (CDN edge network, automatic
+    CI/CD from \texttt{main} branch).
+  \item \textbf{Backend services:} Render.com, each service
+    deployed from the multi-stage Dockerfile.
+  \item \textbf{Databases:} Neon PostgreSQL (serverless, region
+    \texttt{us-east-1}) and MongoDB Atlas (shared cluster).
+  \item \textbf{Redis:} Upstash serverless Redis for rate-limit
+    counters and session caching.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  font=\scriptsize,
+  cloud/.style={ellipse, draw, thick, minimum width=2.2cm,
+                minimum height=0.7cm, text centered},
+  arr/.style={-{Latex[length=2mm]}, thick, color=ecogray}
+]
+  \node[cloud, fill=blue!10,  draw=codeblue]  (vercel)  {Vercel\\Frontend};
+  \node[cloud, fill=green!10, draw=ecogreen, right=1.2cm of vercel]
+    (render) {Render\\Backend};
+  \node[cloud, fill=yellow!10, draw=ecoyellow!80,
+        below left=1.0cm and 0.2cm of render]
+    (neon) {Neon\\PostgreSQL};
+  \node[cloud, fill=green!8, draw=ecogreen!70,
+        below right=1.0cm and 0.2cm of render]
+    (atlas) {MongoDB\\Atlas};
+  \node[cloud, fill=red!8, draw=ecored!70,
+        below=1.0cm of render]
+    (redis) {Upstash\\Redis};
+
+  \draw[arr] (vercel) -- node[above, font=\tiny]{HTTPS} (render);
+  \draw[arr] (render) -- (neon);
+  \draw[arr] (render) -- (atlas);
+  \draw[arr] (render) -- (redis);
+\end{tikzpicture}
+\caption{Production cloud deployment topology.}
+\label{fig:deploy}
+\end{figure}
+
+\subsection{Local Development with Docker Compose}
+
+All 11 services (including PostgreSQL, MongoDB, and Redis)
+are orchestrated with a single \texttt{docker-compose.yml}.
+The multi-stage Dockerfile compiles Java JARs (Maven),
+installs Node.js dependencies, and installs Python requirements,
+producing a monolithic image managed by Supervisor for
+all-in-one Render deployments.
+
+% ───────────────────────────────────────────────────────────────────
+\section{Software Functionalities}
+% ───────────────────────────────────────────────────────────────────
+
+\subsection{Role-Based Workflows}
+
+EcoMarket supports three roles, each with a distinct workflow:
+
+\begin{enumerate}[leftmargin=1.5em, itemsep=3pt]
+  \item \textbf{Producer:} Multi-step registration (personal +
+    corporate data, RUC validation); product catalog management
+    (name, price, stock, images, ingredient list); real-time
+    audit status tracking; downloadable PDF certificates.
+  \item \textbf{Consumer:} Browse catalog with Eco-Score filters
+    and ecological badges; view per-ingredient safety analysis;
+    add to cart; checkout with Yape/Plin/Stripe; track orders.
+  \item \textbf{Administrator:} Review pending products; approve
+    or reject with written observations; view immutable audit
+    ledger; access platform statistics (total sales, active
+    clients, eco-score averages).
+\end{enumerate}
+
+\subsection{Security}
+
+\begin{itemize}[leftmargin=1.2em, itemsep=2pt]
+  \item JWT HS256, 24-hour expiration, shared secret across services.
+  \item BCrypt password hashing (cost factor 12).
+  \item Per-IP rate limiting via Kong plugins (30/min auth;
+    15/min payments).
+  \item Stripe webhook HMAC-SHA256 signature verification.
+  \item Content Security Policy headers on all Next.js routes.
+  \item Input sanitization (SQL injection prevention in Spring Boot;
+    DOMPurify XSS prevention in frontend).
+  \item Cloudflare Turnstile CAPTCHA on registration and login.
+\end{itemize}
+
+% ───────────────────────────────────────────────────────────────────
+\section{Required Metadata}
+% ───────────────────────────────────────────────────────────────────
+
+\begin{table}[H]
+\centering
+\caption{Code metadata (SoftwareX format).}
+\renewcommand{\arraystretch}{1.15}
+\scriptsize
+\begin{tabularx}{\columnwidth}{cl X}
+\toprule
+\textbf{Nr.} & \textbf{Description} & \textbf{Value} \\
+\midrule
+C1 & Code version   & v1.0.0 \\
+C2 & Repository     & \href{https://github.com/JosepVl123463/EcoMarketFinalSoftware}
+                        {\texttt{github.com/JosepVl123463/\\EcoMarketFinalSoftware}} \\
+C3 & License        & MIT \\
+C4 & Version system & Git \\
+C5 & Languages      & TypeScript, Java, Python, JavaScript \\
+C6 & Frameworks     & Next.js, Spring Boot, FastAPI, Express \\
+C7 & Databases      & PostgreSQL, MongoDB, Redis \\
+C8 & DevOps         & Docker, Vercel, Render, GitHub Actions \\
+C9 & Support email  & \href{mailto:josep.garate@est.unap.edu.pe}
+                        {\texttt{josep.garate@est.unap.edu.pe}} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Software metadata (SoftwareX format).}
+\renewcommand{\arraystretch}{1.15}
+\scriptsize
+\begin{tabularx}{\columnwidth}{cl X}
+\toprule
+\textbf{Nr.} & \textbf{Description} & \textbf{Value} \\
+\midrule
+S1 & Software version & v1.0.0 \\
+S2 & Live URL & \href{https://eco-market-final-software-s2w6.vercel.app}
+                 {\texttt{eco-market-final-software-s2w6.vercel.app}} \\
+S3 & License  & MIT \\
+S4 & Platform & Modern web browser (Chrome, Firefox, Safari, Edge) \\
+S5 & End-user deps & None (server-side rendering) \\
+S6 & Developer deps & Docker, Node.js 20+, Java 21, Python 3.11+ \\
+S7 & Support email & \href{mailto:josep.garate@est.unap.edu.pe}
+                      {\texttt{josep.garate@est.unap.edu.pe}} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ───────────────────────────────────────────────────────────────────
+\section{Illustrative Examples}
+% ───────────────────────────────────────────────────────────────────
+
+\subsection{Producer Scenario}
+
+A quinoa producer from Puno registers with their RUC, uploads a product
+photo, fills in the ingredient list (e.g., ``quinoa orgánica, sal marina''),
+and submits for audit. The audit engine scans the ingredients, finds no
+prohibited chemicals, calculates $S = 100$, assigns
+\textit{Eco-Friendly} and \textit{Tóxico-Free} badges, stores the
+SHA-256 hash, and marks the product APPROVED. The producer can then
+download the PDF certificate to display on their packaging.
+
+\subsection{Consumer Scenario}
+
+A consumer browses the catalog, filters by $S \geq 90$, and finds the
+approved quinoa. They view its per-ingredient safety table, add it to
+the cart, and proceed to checkout. They select Yape, scan the QR code
+on their mobile, and enter the 6-digit approval code. The platform
+confirms the order, decrements stock in product-service, and sends
+a push notification: \textit{``¡Pago Exitoso! Tu orden \#XYZ ha sido
+procesada.''} A 15\,\% platform fee is recorded in
+\texttt{payment\_splits}.
+
+% ───────────────────────────────────────────────────────────────────
+\section{Impact and Conclusions}
+% ───────────────────────────────────────────────────────────────────
+
+EcoMarket demonstrates the feasibility of combining rigorous
+ecological auditing with practical digital commerce for underserved
+local markets. The platform:
+
+\begin{itemize}[leftmargin=1.2em, itemsep=2pt]
+  \item Removes intermediaries for Puno's ecological producers,
+    enabling 85\,\% revenue retention.
+  \item Provides consumers with verifiable, cryptographically
+    anchored product quality information.
+  \item Establishes a technical template — microservices, AI
+    auditing, local payments — replicable for other
+    Peruvian ecological regions.
+\end{itemize}
+
+Future work will focus on: (i) integration of a real
+computer-vision ingredient detection model; (ii) native mobile
+application; (iii) integration with additional Peruvian payment
+processors (Culqi, Niubiz); and (iv) stronger certificate
+verification via blockchain anchoring.
+
+% ───────────────────────────────────────────────────────────────────
+\section*{Acknowledgements}
+% ───────────────────────────────────────────────────────────────────
+
+The author thanks the Universidad Nacional del Altiplano, Puno, and the
+Escuela Profesional de Ingeniería de Sistemas for their academic support.
+Special gratitude is expressed to Professor Torres Cruz Fred, instructor
+of the Taller de Software course, for his guidance throughout the
+development of EcoMarket. The author also thanks local ecological
+producers and early users who provided feedback to improve the platform.
+
+% ───────────────────────────────────────────────────────────────────
+\begin{thebibliography}{9}
+\bibitem{nextjs} Vercel Inc., \textit{Next.js 16 Documentation},
+  \url{https://nextjs.org/docs}, 2026.
+\bibitem{springboot} VMware Inc., \textit{Spring Boot 3.2 Reference Guide},
+  \url{https://docs.spring.io/spring-boot/docs/3.2}, 2024.
+\bibitem{fastapi} S. Ramírez, \textit{FastAPI Documentation},
+  \url{https://fastapi.tiangolo.com}, 2024.
+\bibitem{kong} Kong Inc., \textit{Kong Gateway 3.6 Documentation},
+  \url{https://docs.konghq.com/gateway/3.6}, 2024.
+\bibitem{stripe} Stripe Inc., \textit{Stripe Checkout Documentation},
+  \url{https://stripe.com/docs/checkout}, 2024.
+\bibitem{reportlab} ReportLab Inc., \textit{ReportLab PDF Library},
+  \url{https://www.reportlab.com/docs/reportlab-userguide.pdf}, 2024.
+\bibitem{cosmos} COSMOS, \textit{COSMOS Organic Standard v3.0},
+  COSMOS-standard AISBL, Brussels, 2023.
+\bibitem{cereach} European Commission, \textit{REACH Regulation
+  (EC) No 1907/2006}, Official Journal of the EU, 2006.
+\bibitem{docker} Docker Inc., \textit{Docker Compose v3 Reference},
+  \url{https://docs.docker.com/compose}, 2024.
+\end{thebibliography}
+
+\end{document}

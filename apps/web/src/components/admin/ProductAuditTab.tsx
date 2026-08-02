@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import { escapeHtml } from '@/lib/sanitize';
 
 export interface AuditProduct extends Product {
   providerName?: string;
@@ -219,10 +220,21 @@ export function ProductAuditTab() {
           const isApproved = selected.status === 'APPROVED';
           const stampColor = isApproved ? '#1A3C34' : '#C53030';  // brand color for certificate stamp
           const stampText = isApproved ? 'APROBADO' : 'RECHAZADO';
+          // Todos los campos provienen de datos de usuario/proveedor: se escapan
+          // para evitar inyección de HTML/scripts (XSS) en la ventana generada.
+          const safe = {
+            name: escapeHtml(selected.name || ''),
+            category: escapeHtml(selected.category || ''),
+            providerName: escapeHtml(selected.providerName || 'EcoShop'),
+            providerRuc: escapeHtml(selected.providerRuc || '20123456789'),
+            origenRegion: escapeHtml(selected.origenRegion || 'Cusco, Perú'),
+            fechaProduccion: escapeHtml(selected.fechaProduccion || '2026-05-01'),
+            motivoRechazo: escapeHtml(selected.motivoRechazo || 'Certificado orgánico no válido o vencido.'),
+          };
           const docHtml = `
             <html>
             <head>
-              <title>Certificado de Auditoría - ${selected.name}</title>
+              <title>Certificado de Auditoría - ${safe.name}</title>
               <style>
                 body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 40px; color: #2D3748; line-height: 1.6; }
                 .cert-container { border: 4px double #1A3C34; padding: 40px; border-radius: 12px; background: #FAF9F6; position: relative; }
@@ -251,12 +263,12 @@ export function ProductAuditTab() {
                 <div class="title">Certificado Oficial de Auditoría Ambiental</div>
                 <div class="details">
                   <div class="section-title">Información de Trazabilidad</div>
-                  <div class="field"><div class="label">Producto:</div><div class="value">${selected.name}</div></div>
-                  <div class="field"><div class="label">Categoría:</div><div class="value">${selected.category}</div></div>
-                  <div class="field"><div class="label">Productor:</div><div class="value">${selected.providerName || 'EcoShop'}</div></div>
-                  <div class="field"><div class="label">RUC:</div><div class="value">${selected.providerRuc || '20123456789'}</div></div>
-                  <div class="field"><div class="label">Región Origen:</div><div class="value">${selected.origenRegion || 'Cusco, Perú'}</div></div>
-                  <div class="field"><div class="label">Fecha Producción:</div><div class="value">${selected.fechaProduccion || '2026-05-01'}</div></div>
+                  <div class="field"><div class="label">Producto:</div><div class="value">${safe.name}</div></div>
+                  <div class="field"><div class="label">Categoría:</div><div class="value">${safe.category}</div></div>
+                  <div class="field"><div class="label">Productor:</div><div class="value">${safe.providerName}</div></div>
+                  <div class="field"><div class="label">RUC:</div><div class="value">${safe.providerRuc}</div></div>
+                  <div class="field"><div class="label">Región Origen:</div><div class="value">${safe.origenRegion}</div></div>
+                  <div class="field"><div class="label">Fecha Producción:</div><div class="value">${safe.fechaProduccion}</div></div>
                   
                   <div class="section-title">Resultados del Análisis</div>
                   <div class="field"><div class="label">Eco-Score Otorgado:</div><div class="value">${isApproved ? '95 / 100' : '00 / 100'}</div></div>
@@ -264,7 +276,7 @@ export function ProductAuditTab() {
                   
                   ${!isApproved ? `
                     <div class="obs">
-                      <strong>Observaciones del Rechazo:</strong> ${selected.motivoRechazo || 'Certificado orgánico no válido o vencido.'}
+                      <strong>Observaciones del Rechazo:</strong> ${safe.motivoRechazo}
                     </div>
                   ` : `
                     <div class="obs-ok">

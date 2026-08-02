@@ -33,8 +33,7 @@ function LoginForm() {
         setError('Por favor completa todos los campos.');
         return;
       }
-      // Modo demo: permite el usuario admin sin formato email
-      if (email !== 'admin' && !/\S+@\S+\.\S+/.test(email)) {
+      if (!/\S+@\S+\.\S+/.test(email)) {
         setError('Ingresa un email válido.');
         return;
       }
@@ -55,53 +54,19 @@ function LoginForm() {
         startTransition(() => router.push(redirect));
         return;
       } catch (err: unknown) {
+        // La autenticación es responsabilidad exclusiva del backend.
+        // Un fallo NUNCA debe conceder sesión (evita puertas traseras en el cliente).
         const axiosError = err as { response?: { status?: number; data?: { error?: string } } };
         const status = axiosError?.response?.status;
         const apiError = axiosError?.response?.data?.error;
 
         if (status === 429) {
           setError(apiError || 'Demasiados intentos. Espera 5 minutos antes de reintentar.');
-          setLoading(false);
-          return;
+        } else if (status === 401 || status === 400) {
+          setError('Credenciales incorrectas. Intenta de nuevo.');
+        } else {
+          setError('No se pudo conectar con el servidor. Inténtalo más tarde.');
         }
-
-        // Demo / fallback para recuperar funcionalidad de UI
-        const isAdminCredentials =
-          (email === 'admin' || email === 'admin@ecomarket.pe') && password === '123456789';
-
-        if (isAdminCredentials) {
-          const adminUser = {
-            id: '99999999-9999-9999-9999-999999999999',
-            email: form.email,
-            fullName: 'Administrador Principal',
-            role: 'admin' as const,
-            ecoScore: 999,
-          };
-          setAuth(adminUser, 'demo-token-admin');
-          toast.success('¡Bienvenido, Administrador (Modo Seguro)! 👑');
-          const redirect = searchParams.get('redirect') ?? '/admin';
-          router.push(redirect);
-          setLoading(false);
-          return;
-        }
-
-        // Cualquier password >= 6 habilita demo customer
-        if (password.length >= 6) {
-          const demoUser = {
-            id: 'demo-user',
-            email: form.email,
-            fullName: 'Usuario Demo',
-            role: 'customer' as const,
-            ecoScore: 120,
-          };
-          setAuth(demoUser, 'demo-token-ecomarket');
-          toast.success('¡Bienvenido al modo demo! 🌿');
-          router.push('/');
-          setLoading(false);
-          return;
-        }
-
-        setError('Credenciales incorrectas. Intenta de nuevo.');
       } finally {
         setLoading(false);
       }
@@ -109,39 +74,25 @@ function LoginForm() {
     [form, router, searchParams, setAuth]
   );
 
-  const handleGoogle = useCallback(() => {
-    setGoogleLoading(true);
-    setLoading(true);
+  const handleGoogle = useCallback(async () => {
+    // El inicio de sesión con Google requiere un flujo OAuth real validado en el
+    // servidor (verificación del id_token). Mientras no esté configurado en el
+    // backend, no se concede ninguna sesión desde el cliente.
     setError('');
-    toast.loading('Conectando con Google OAuth...', { id: 'google-oauth' });
-    setTimeout(() => {
-      setLoading(false);
-      setGoogleLoading(false);
-      
-      // Creamos o recuperamos la sesión de Google guardándola en localStorage para consistencia
-      const googleUser = {
-        id: 'google-user-98765',
-        email: 'josep.garate@gmail.com',
-        fullName: 'Josep Vladimir Garate Quispe',
-        role: 'customer' as const,
-        ecoScore: 120,
-        avatarUrl: '/IMG/cepillo_bambu.png',
-        authMethod: 'google' as const,
-      };
-      
-      // Guardar en base de datos local temporal para simular persistencia premium
-      const localUsers = JSON.parse(localStorage.getItem('ecomarket-users') || '[]');
-      const userExists = localUsers.find((u: any) => u.email === googleUser.email);
-      if (!userExists) {
-        localUsers.push(googleUser);
-        localStorage.setItem('ecomarket-users', JSON.stringify(localUsers));
+    setGoogleLoading(true);
+    try {
+      const url = await authService.getGoogleAuthUrl();
+      if (url) {
+        window.location.href = url;
+        return;
       }
-
-      setAuth(googleUser, 'google-oauth-token-ecomarket');
-      toast.success('¡Sesión iniciada con Google! Bienvenido 🌿', { id: 'google-oauth' });
-      router.push('/');
-    }, 1000);
-  }, [router, setAuth]);
+      toast.error('El inicio de sesión con Google no está disponible por ahora.');
+    } catch {
+      toast.error('El inicio de sesión con Google no está disponible por ahora.');
+    } finally {
+      setGoogleLoading(false);
+    }
+  }, []);
 
   return (
     <form id="login-form" onSubmit={handleSubmit} className="bg-[var(--surface)] rounded-[2rem] p-8 border border-[var(--border)] shadow-sm space-y-5">

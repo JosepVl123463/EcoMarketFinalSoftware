@@ -1,4 +1,6 @@
-from fastapi import FastAPI, HTTPException, Response
+import base64
+import jwt as pyjwt
+from fastapi import FastAPI, HTTPException, Response, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import random
@@ -24,7 +26,12 @@ from io import BytesIO
 import datetime
 import os
 
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://admin:mongo_password@mongodb:27017")
+# La cadena de conexión a Mongo debe venir de la variable de entorno MONGO_URI
+# (con credenciales fuertes gestionadas por el entorno). Sin valor por defecto
+# embebido: no se hardcodean credenciales en el código.
+MONGO_URI = os.getenv("MONGO_URI")
+if not MONGO_URI:
+    raise RuntimeError("MONGO_URI no está configurado")
 client = AsyncIOMotorClient(MONGO_URI)
 db = client.ecomarket_audit
 
@@ -32,13 +39,42 @@ app = FastAPI(title="EcoMarket Audit Service", description="AI-driven Eco-Score 
 
 CORS_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,https://ecomarket.pe").split(",")
 
+# Nunca combinar comodín de orígenes con credenciales: si por error se configura
+# "*", se deshabilitan las credenciales para evitar la combinación insegura.
+_ALLOW_CREDENTIALS = "*" not in CORS_ORIGINS
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
-    allow_credentials=True,
+    allow_credentials=_ALLOW_CREDENTIALS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ── Autenticación por JWT ───────────────────────────────────────────────────
+# El secreto se comparte con auth-service. La clave HMAC son los bytes que
+# resultan de decodificar el secreto en Base64 (igual que en el backend Java).
+JWT_SECRET = os.getenv("JWT_SECRET")
+
+
+def _jwt_key():
+    if not JWT_SECRET:
+        raise HTTPException(status_code=500, detail="Servicio mal configurado")
+    return base64.b64decode(JWT_SECRET)
+
+
+def require_admin(authorization: Optional[str] = Header(default=None)):
+    """Exige un JWT válido con rol de administrador (para aprobar/rechazar)."""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="No autorizado")
+    token = authorization[7:]
+    try:
+        claims = pyjwt.decode(token, _jwt_key(), algorithms=["HS256"])
+    except Exception:
+        raise HTTPException(status_code=401, detail="Token inválido o expirado")
+    if str(claims.get("role", "")).lower() != "admin":
+        raise HTTPException(status_code=403, detail="Se requiere rol de administrador")
+    return claims
 
 AI_ENGINE_HOST = os.getenv("AI_ENGINE_HOST", "ai-engine")
 AI_ENGINE_PORT = os.getenv("AI_ENGINE_PORT", "8085")
@@ -429,7 +465,7 @@ async def _update_product_status(product_id: str, status: str, motivo_rechazo: O
 
 
 @app.post("/api/audit/{product_id}/approve")
-async def approve_product(product_id: str, body: ApproveRejectRequest):
+async def approve_product(product_id: str, body: ApproveRejectRequest, _admin=Depends(require_admin)):
     timestamp = time.time()
     audit_hash = hashlib.sha256(f"{product_id}-approve-{timestamp}".encode()).hexdigest()
 
@@ -455,7 +491,7 @@ async def approve_product(product_id: str, body: ApproveRejectRequest):
 
 
 @app.post("/api/audit/{product_id}/reject")
-async def reject_product(product_id: str, body: ApproveRejectRequest):
+async def reject_product(product_id: str, body: ApproveRejectRequest, _admin=Depends(require_admin)):
     if not body.observaciones:
         raise HTTPException(status_code=400, detail="Las observaciones son obligatorias al rechazar.")
 
@@ -491,9 +527,12 @@ async def get_product_details_from_service(product_id: str):
             response.raise_for_status()
             return response.json()
         except httpx.HTTPStatusError as e:
-            raise HTTPException(status_code=e.response.status_code, detail=f"Error fetching product: {e.response.text}")
+            # No se reenvía el cuerpo crudo del servicio interno al cliente.
+            print(f"⚠️ Error fetching product {product_id}: {e.response.status_code} {e.response.text}")
+            raise HTTPException(status_code=e.response.status_code, detail="No se pudo obtener el producto")
         except httpx.RequestError as e:
-            raise HTTPException(status_code=500, detail=f"Could not connect to product service: {e}")
+            print(f"⚠️ Could not connect to product service: {e}")
+            raise HTTPException(status_code=502, detail="Servicio de productos no disponible")
 
 
 def _build_eco_logo():

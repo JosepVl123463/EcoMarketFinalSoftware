@@ -1,5 +1,6 @@
 package pe.ecomarket.product.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -43,14 +44,27 @@ public class ProductController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<Product> getProductById(@PathVariable UUID id) {
-        return ResponseEntity.ok(productService.getProductById(id));
+        // Acceso público: solo productos APROBADOS. Los productos PENDING/REJECTED
+        // (que incluyen motivos de rechazo) no deben ser visibles sin autorización.
+        return ResponseEntity.ok(productService.getPublicProductById(id));
     }
 
     /**
      * POST /api/products — create a new product (providers only).
      */
     @PostMapping
-    public ResponseEntity<Product> createProduct(@Valid @RequestBody CreateProductRequest request) {
+    public ResponseEntity<Product> createProduct(
+            HttpServletRequest httpRequest,
+            @Valid @RequestBody CreateProductRequest request
+    ) {
+        // El proveedor se deriva SIEMPRE del usuario autenticado (JWT), nunca del
+        // cuerpo de la petición: así un proveedor no puede publicar productos a
+        // nombre de otro (suplantación).
+        String userIdStr = (String) httpRequest.getAttribute("userId");
+        if (userIdStr == null) {
+            return ResponseEntity.status(401).build();
+        }
+        request.setProviderId(UUID.fromString(userIdStr));
         return ResponseEntity.ok(productService.createProduct(request));
     }
 

@@ -30,8 +30,22 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // Catálogo público (solo lectura).
                 .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
-                .requestMatchers("/api/orders/*/confirm").permitAll()
+                // Confirmación de pago y consulta interna del pedido: se autentican
+                // con secreto interno en el controlador (no con JWT de usuario),
+                // por eso quedan permitAll aquí. El matcher de un solo segmento
+                // NO cubre /api/orders/customer/{id} (dos segmentos), que sigue
+                // requiriendo autenticación.
+                .requestMatchers(HttpMethod.POST, "/api/orders/*/confirm").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/orders/*").permitAll()
+                // Crear/editar productos: solo proveedores o administradores.
+                .requestMatchers(HttpMethod.POST, "/api/products").hasAnyRole("PROVIDER", "ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/products/*").hasAnyRole("PROVIDER", "ADMIN")
+                // Auditar productos y ajustar stock: solo administradores.
+                .requestMatchers(HttpMethod.POST, "/api/products/*/audit").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PATCH, "/api/products/*/stock").hasRole("ADMIN")
+                // Cualquier otra ruta requiere autenticación.
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
