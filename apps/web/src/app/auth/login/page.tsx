@@ -7,7 +7,7 @@ import { authService } from '@/services';
 import { useAuthStore } from '@/store/authStore';
 import { sanitizeEmail, sanitizePassword } from '@/lib/sanitize';
 import { Logo } from '@/components/Logo';
-import { Eye, EyeOff, Loader2, AlertCircle, Info } from 'lucide-react';
+import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 function LoginForm() {
@@ -17,7 +17,6 @@ function LoginForm() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const [, startTransition] = useTransition();
 
@@ -74,26 +73,6 @@ function LoginForm() {
     [form, router, searchParams, setAuth]
   );
 
-  const handleGoogle = useCallback(async () => {
-    // El inicio de sesión con Google requiere un flujo OAuth real validado en el
-    // servidor (verificación del id_token). Mientras no esté configurado en el
-    // backend, no se concede ninguna sesión desde el cliente.
-    setError('');
-    setGoogleLoading(true);
-    try {
-      const url = await authService.getGoogleAuthUrl();
-      if (url) {
-        window.location.href = url;
-        return;
-      }
-      toast.error('El inicio de sesión con Google no está disponible por ahora.');
-    } catch {
-      toast.error('El inicio de sesión con Google no está disponible por ahora.');
-    } finally {
-      setGoogleLoading(false);
-    }
-  }, []);
-
   return (
     <form id="login-form" onSubmit={handleSubmit} className="bg-[var(--surface)] rounded-[2rem] p-8 border border-[var(--border)] shadow-sm space-y-5">
       {error && (
@@ -102,33 +81,6 @@ function LoginForm() {
           <span>{error}</span>
         </div>
       )}
-
-      <button
-        type="button"
-        onClick={handleGoogle}
-        disabled={loading || googleLoading}
-        className="w-full bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] py-3.5 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-3 hover:opacity-90 transition disabled:opacity-70"
-      >
-        <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden>
-          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v3.92h6.69a5.74 5.74 0 0 1-2.49 3.77v3.12h3.99c2.33-2.14 3.66-5.3 3.66-8.74z" />
-          <path fill="#34A853" d="M12 24c3.24 0 5.97-1.08 7.96-2.91l-3.99-3.12c-1.11.74-2.53 1.19-3.97 1.19-3.05 0-5.63-2.06-6.55-4.83H1.47v3.22C3.48 20.3 7.46 24 12 24z" />
-          <path fill="#FBBC05" d="M5.45 14.33a7.14 7.14 0 0 1 0-4.66V6.45H1.47a11.96 11.96 0 0 0 0 11.1l3.98-3.22z" />
-          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.22 0 12 0 7.46 0 3.48 3.7 1.47 7.68l3.98 3.22c.92-2.77 3.5-4.83 6.55-4.83z" />
-        </svg>
-        {googleLoading ? <Loader2 size={18} className="animate-spin text-[#4285F4]" /> : null}
-        <span>{googleLoading ? 'Conectando...' : 'Iniciar sesión con Google'}</span>
-      </button>
-
-      <p className="text-[10px] text-[var(--text-muted)] flex items-center gap-1 justify-center -mt-2">
-        <Info size={12} />
-        OAuth requiere configuración del servidor (GOOGLE_CLIENT_ID).
-      </p>
-
-      <div className="flex items-center my-4">
-        <div className="flex-1 border-t border-[var(--border)]" />
-        <span className="px-3 text-xs text-[var(--text-muted)] font-medium">o con credenciales</span>
-        <div className="flex-1 border-t border-[var(--border)]" />
-      </div>
 
       <div>
         <label htmlFor="email-input" className="block text-sm font-bold mb-2">Email</label>

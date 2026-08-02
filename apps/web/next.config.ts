@@ -19,12 +19,12 @@ const connectSrc = [
 // orígenes externos no confiables y el embebido en iframes (frame-ancestors 'none').
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://www.google.com https://www.gstatic.com",
+  "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self'",
   `connect-src ${connectSrc}`,
-  "frame-src https://js.stripe.com https://www.google.com",
+  "frame-src https://js.stripe.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

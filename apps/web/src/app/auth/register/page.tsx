@@ -28,7 +28,6 @@ function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [validatingRuc, setValidatingRuc] = useState(false);
   const [rucValidated, setRucValidated] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isRegisteredPending, setIsRegisteredPending] = useState(false);
 
@@ -118,27 +117,6 @@ function RegisterForm() {
     setStep(prev => Math.max(1, prev - 1));
   };
 
-  // Registro con Google (solo consumidores). Requiere OAuth real validado en el
-  // servidor; nunca se concede sesión desde el cliente.
-  const handleGoogleLogin = async () => {
-    if (role === 'provider') {
-      toast.error('El registro con Google es exclusivo para consumidores. Los productores deben pasar validación fiscal RUC.');
-      return;
-    }
-    setGoogleLoading(true);
-    try {
-      const url = await authService.getGoogleAuthUrl();
-      if (url) {
-        window.location.href = url;
-        return;
-      }
-      toast.error('El registro con Google no está disponible por ahora.');
-    } catch {
-      toast.error('El registro con Google no está disponible por ahora.');
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -332,41 +310,6 @@ function RegisterForm() {
       {role === 'customer' ? (
         /* ==================== FORMULARIO CONSUMIDOR ==================== */
         <form id="register-form" onSubmit={handleSubmit} className="space-y-5">
-          {/* Google Button */}
-          <button
-            type="button"
-            onClick={handleGoogleLogin}
-            disabled={loading || googleLoading}
-            className="w-full bg-[var(--surface)] border border-[var(--border)] text-[var(--text-secondary)] py-3.5 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-3 hover:bg-[var(--input-bg)] transition hover:border-[var(--border-light)] hover:scale-[1.01] disabled:opacity-70"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
-              <path
-                fill="#4285F4"
-                d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v3.92h6.69a5.74 5.74 0 0 1-2.49 3.77v3.12h3.99c2.33-2.14 3.66-5.3 3.66-8.74z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 24c3.24 0 5.97-1.08 7.96-2.91l-3.99-3.12c-1.11.74-2.53 1.19-3.97 1.19-3.05 0-5.63-2.06-6.55-4.83H1.47v3.22C3.48 20.3 7.46 24 12 24z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.45 14.33a7.14 7.14 0 0 1 0-4.66V6.45H1.47a11.96 11.96 0 0 0 0 11.1l3.98-3.22z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.22 0 12 0 7.46 0 3.48 3.7 1.47 7.68l3.98 3.22c.92-2.77 3.5-4.83 6.55-4.83z"
-              />
-            </svg>
-            {googleLoading ? <Loader2 size={18} className="animate-spin text-[#4285F4]" /> : null}
-            <span>{googleLoading ? 'Conectando...' : 'Registrarse con Google'}</span>
-          </button>
-
-          <div className="flex items-center my-4">
-            <div className="flex-1 border-t border-[var(--border)]"></div>
-            <span className="px-3 text-xs text-[var(--text-muted)] font-medium bg-[var(--surface)]">o con correo electrónico</span>
-            <div className="flex-1 border-t border-[var(--border)]"></div>
-          </div>
-
           {/* Full Name */}
           <div className="relative">
             <label htmlFor="fullname-input" className="block text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Nombre completo</label>

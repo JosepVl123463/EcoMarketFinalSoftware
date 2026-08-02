@@ -79,21 +79,6 @@ export const authService = {
     const { data } = await api.post('/api/auth/register/producer', producerData);
     return data;
   },
-  // Google OAuth 2.0 (exclusivo consumidores)
-  googleAuth: async (googleToken: string) => {
-    const { data } = await api.post('/api/auth/google', { token: googleToken });
-    return data; // { token, user }
-  },
-  // Devuelve la URL de autorización de Google si el backend la expone; null si no
-  // está configurado. Nunca concede sesión desde el cliente.
-  getGoogleAuthUrl: async (): Promise<string | null> => {
-    try {
-      const { data } = await api.get('/api/auth/google/url');
-      return data?.url ?? null;
-    } catch {
-      return null;
-    }
-  },
   getMe: async () => {
     const { data } = await api.get('/api/auth/me');
     return data;

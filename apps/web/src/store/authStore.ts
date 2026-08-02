@@ -25,7 +25,7 @@ export interface User {
   role: 'customer' | 'provider' | 'admin';
   ecoScore: number;
   avatarUrl?: string;
-  authMethod?: 'email' | 'google';
+  authMethod?: 'email';
 }
 
 interface AuthState {
