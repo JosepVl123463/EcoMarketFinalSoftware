@@ -14,7 +14,9 @@ const server = http.createServer((req, res) => {
   if (req.method === 'OPTIONS') { res.writeHead(204, h); return res.end(); }
   const m = SERVICES.find(s => req.url.startsWith(s.prefix));
   if (!m) { res.writeHead(404, h); return res.end('{}'); }
-  const path = req.url.substring(m.prefix.length) || '/';
+  // Se reenvía la ruta COMPLETA (sin recortar el prefijo): los servicios Spring
+  // mapean sus endpoints bajo /api/... , así que necesitan la ruta tal cual.
+  const path = req.url;
   const opt = { hostname: 'localhost', port: m.port, path, method: req.method, headers: { ...req.headers, host: 'localhost' } };
   delete opt.headers['origin'];
   const pr = http.request(opt, pr2 => { let b=''; pr2.on('data',c=>b+=c); pr2.on('end',()=>res.writeHead(pr2.statusCode,{...h,...pr2.headers}).end(b)); });
