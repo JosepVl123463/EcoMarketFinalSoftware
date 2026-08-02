@@ -124,16 +124,34 @@ function RegisterForm() {
 
     if (role === 'customer') {
       // Cliente Submit
-      if (!form.email || !form.password || !form.fullName || !form.phone) {
+      if (!form.fullName || !form.email || !form.phone || !form.password || !form.confirmPassword) {
         setError('Por favor completa todos los campos.');
         return;
       }
-      if (form.password.length < 8) {
-        setError('La contraseña debe tener al menos 8 caracteres.');
+      if (form.fullName.trim().length < 3) {
+        setError('Ingresa tu nombre completo.');
         return;
       }
-      if (!/\S+@\S+\.\S+/.test(form.email)) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
         setError('Ingresa un email válido.');
+        return;
+      }
+      if (form.phone.length !== 9) {
+        setError('El celular debe tener 9 dígitos.');
+        return;
+      }
+      // Política de contraseña fuerte (nivel profesional).
+      const pw = form.password;
+      if (pw.length < 8 || !/[A-Z]/.test(pw) || !/[a-z]/.test(pw) || !/[0-9]/.test(pw)) {
+        setError('La contraseña debe tener mínimo 8 caracteres, con mayúscula, minúscula y número.');
+        return;
+      }
+      if (form.password !== form.confirmPassword) {
+        setError('Las contraseñas no coinciden.');
+        return;
+      }
+      if (!acceptedTerms) {
+        setError('Debes aceptar los Términos y Condiciones para crear tu cuenta.');
         return;
       }
 
@@ -387,17 +405,71 @@ function RegisterForm() {
               </button>
             </div>
             <PasswordStrengthBar password={form.password} />
+            {/* Requisitos de contraseña (política profesional) */}
+            <ul className="mt-2 space-y-1">
+              {[
+                { ok: form.password.length >= 8, txt: 'Al menos 8 caracteres' },
+                { ok: /[A-Z]/.test(form.password) && /[a-z]/.test(form.password), txt: 'Mayúscula y minúscula' },
+                { ok: /[0-9]/.test(form.password), txt: 'Al menos un número' },
+              ].map((r) => (
+                <li key={r.txt} className={`text-[11px] flex items-center gap-1.5 ${r.ok ? 'text-green-600' : 'text-[var(--text-muted)]'}`}>
+                  {r.ok ? <CheckCircle2 size={12} /> : <span className="w-3 h-3 rounded-full border border-current inline-block" />}
+                  {r.txt}
+                </li>
+              ))}
+            </ul>
           </div>
+
+          {/* Confirmar Contraseña */}
+          <div>
+            <label htmlFor="reg-confirm-input" className="block text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Confirmar contraseña</label>
+            <input
+              id="reg-confirm-input"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Repite tu contraseña"
+              autoComplete="new-password"
+              value={form.confirmPassword}
+              onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+              className={`w-full px-4 py-3.5 bg-[var(--input-bg)] border rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#1A3C34] text-sm transition ${
+                form.confirmPassword
+                  ? form.password === form.confirmPassword
+                    ? 'border-green-400'
+                    : 'border-[var(--error)]'
+                  : 'border-[var(--border)]'
+              }`}
+            />
+            {form.confirmPassword && form.password !== form.confirmPassword && (
+              <p className="text-[11px] text-[var(--error)] mt-1">Las contraseñas no coinciden.</p>
+            )}
+          </div>
+
+          {/* Términos y Condiciones */}
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              className="mt-0.5 rounded border-[var(--border-light)] text-[var(--primary)] focus:ring-[#1A3C34]"
+            />
+            <span className="text-xs text-[var(--text-muted)] leading-relaxed">
+              Acepto los <strong className="text-[var(--text-secondary)]">Términos y Condiciones</strong> y la <strong className="text-[var(--text-secondary)]">Política de Privacidad</strong> de EcoMarket.
+            </span>
+          </label>
 
           {/* Submit */}
           <button
             id="register-submit-btn"
             type="submit"
-            disabled={loading}
-            className="w-full bg-[#1A3C34] text-white py-4 rounded-2xl font-bold text-base hover:bg-green-800 transition disabled:opacity-60 flex items-center justify-center gap-2 shadow-sm"
+            disabled={loading || !acceptedTerms}
+            className="w-full bg-[#1A3C34] text-white py-4 rounded-2xl font-bold text-base hover:bg-green-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
           >
-            {loading ? <Loader2 size={20} className="animate-spin" /> : 'Crear mi cuenta gratis'}
+            {loading ? <><Loader2 size={20} className="animate-spin" /> Creando cuenta…</> : 'Crear mi cuenta gratis'}
           </button>
+
+          <div className="flex items-center justify-center gap-1.5 text-[11px] text-[var(--text-muted)]">
+            <ShieldAlert size={13} className="text-green-600" />
+            <span>Tu contraseña se guarda cifrada · Conexión protegida (TLS)</span>
+          </div>
         </form>
       ) : (
         /* ==================== FORMULARIO PRODUCTOR MULTIPASO (STEPPER) ==================== */
