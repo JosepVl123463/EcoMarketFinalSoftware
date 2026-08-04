@@ -3,32 +3,32 @@ import { Leaf } from 'lucide-react';
 
 export function HeroSection() {
   return (
-    <section className="max-w-7xl mx-auto px-6 mb-16 mt-8">
+    <section className="max-w-7xl mx-auto px-4 sm:px-6 mb-8 sm:mb-16 mt-4 sm:mt-8">
       <div
-        className="rounded-[2.5rem] p-12 text-white flex flex-col md:flex-row items-center justify-between relative overflow-hidden"
+        className="rounded-3xl sm:rounded-[2.5rem] p-6 sm:p-12 text-white flex flex-col md:flex-row items-center justify-between relative overflow-hidden"
         style={{ background: 'linear-gradient(135deg, #1A3C34 0%, #2D5A27 100%)' }}
       >
         {/* Left Content */}
         <div className="relative z-10 max-w-lg">
-          <span className="text-green-300 font-bold uppercase text-xs tracking-widest">Edición {new Date().toLocaleDateString('es-PE', { month: 'long', year: 'numeric' })}</span>
-          <h1 className="text-4xl md:text-5xl font-extrabold mt-4 mb-6 leading-tight">
+          <span className="text-green-300 font-bold uppercase text-[10px] sm:text-xs tracking-widest">Edición {new Date().toLocaleDateString('es-PE', { month: 'long', year: 'numeric' })}</span>
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold mt-2 sm:mt-4 mb-3 sm:mb-6 leading-tight">
             Tu compra tiene un <span className="text-green-400 italic">propósito real.</span>
           </h1>
-          <p className="text-green-100/80 mb-8 text-lg">
+          <p className="text-green-100/80 mb-5 sm:mb-8 text-sm sm:text-lg">
             Descubre productos validados ingrediente por ingrediente. Sin greenwashing, solo la verdad técnica.
           </p>
-          <div className="flex gap-4 flex-wrap">
+          <div className="flex gap-3 sm:gap-4 flex-wrap">
             <Link
               href="#products"
               id="hero-shop-btn"
-              className="bg-[var(--surface)] text-[var(--primary)] px-8 py-3 rounded-xl font-bold shadow-xl hover:bg-[var(--success-bg)] transition"
+              className="bg-[var(--surface)] text-[var(--primary)] px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl font-bold text-sm sm:text-base shadow-xl hover:bg-[var(--success-bg)] transition"
             >
               Comprar Ahora
             </Link>
             <Link
               href="/about"
               id="hero-method-btn"
-              className="bg-transparent border border-white/30 px-8 py-3 rounded-xl font-bold hover:bg-[var(--surface)]/10 transition"
+              className="bg-transparent border border-white/30 px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl font-bold text-sm sm:text-base hover:bg-[var(--surface)]/10 transition"
             >
               Nuestro Método
             </Link>
