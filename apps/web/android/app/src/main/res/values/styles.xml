@@ -13,6 +13,9 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <!-- Barra de estado verde con iconos claros (WiFi/hora en blanco) -->
+        <item name="android:statusBarColor">#1A3C34</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 
 
