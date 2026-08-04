@@ -90,7 +90,10 @@ function NavbarInner() {
 
   return (
     <>
-      <div className="bg-[var(--primary)] text-[var(--text-inverse)] text-[11px] py-2 px-6 flex justify-between items-center font-bold tracking-widest uppercase">
+      <div
+        className="bg-[var(--primary)] text-[var(--text-inverse)] text-[11px] px-6 pb-2 flex justify-between items-center font-bold tracking-widest uppercase"
+        style={{ paddingTop: 'calc(0.5rem + env(safe-area-inset-top))' }}
+      >
         <span>Envíos Carbono Neutral en todo el país</span>
         <span className="hidden md:block">Garantía Ecomarket: 100% Auditado</span>
       </div>
