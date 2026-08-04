@@ -11,4 +11,5 @@ COPY --from=build /app/target/*.jar app.jar
 RUN addgroup -S app && adduser -S app -G app
 USER app
 EXPOSE 8081
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Límite de memoria para caber holgadamente en instancias de 512 MB.
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=60.0", "-XX:MaxMetaspaceSize=128m", "-XX:+UseSerialGC", "-jar", "app.jar"]

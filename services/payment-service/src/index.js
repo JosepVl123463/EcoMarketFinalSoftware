@@ -44,10 +44,19 @@ const stripe = require('stripe')(STRIPE_SECRET_KEY || 'sk_test_placeholder_demo_
 
 const app = express();
 const PORT = process.env.PORT || 8083;
-const PRODUCT_SERVICE_HOST = process.env.PRODUCT_SERVICE_HOST || 'localhost';
-const PRODUCT_SERVICE_PORT = process.env.PRODUCT_SERVICE_PORT || '8082';
-const PRODUCT_SERVICE_URL = `http://${PRODUCT_SERVICE_HOST}:${PRODUCT_SERVICE_PORT}`;
-const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL || `http://${process.env.NOTIFICATION_SERVICE_HOST || 'notification-service'}:${process.env.NOTIFICATION_SERVICE_PORT || '8086'}`;
+
+// Resuelve la URL de un servicio interno de forma compatible con Render y local:
+//  1) Si se define la URL completa (*_URL), se usa tal cual.
+//  2) Si se define solo el host (*_HOST) — como hace Render con `fromService` —
+//     se asume HTTPS público (puerto 443).
+//  3) En su defecto, se usa el nombre del servicio en docker-compose (HTTP).
+function resolveServiceUrl(urlEnv, hostEnv, localDefault) {
+  if (process.env[urlEnv]) return process.env[urlEnv];
+  if (process.env[hostEnv]) return `https://${process.env[hostEnv]}`;
+  return localDefault;
+}
+const PRODUCT_SERVICE_URL = resolveServiceUrl('PRODUCT_SERVICE_URL', 'PRODUCT_SERVICE_HOST', 'http://product-service:8082');
+const NOTIFICATION_SERVICE_URL = resolveServiceUrl('NOTIFICATION_SERVICE_URL', 'NOTIFICATION_SERVICE_HOST', 'http://notification-service:8086');
 
 // Cabeceras para llamadas internas autenticadas hacia product-service.
 const INTERNAL_HEADERS = { 'X-Internal-Secret': INTERNAL_SERVICE_SECRET };

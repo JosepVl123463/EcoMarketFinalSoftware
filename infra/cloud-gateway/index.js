@@ -1,20 +1,43 @@
+/**
+ * API Gateway de EcoMarket (punto de entrada único del backend).
+ *
+ * Enruta cada petición al microservicio correspondiente según el prefijo de la
+ * ruta y aplica CORS de forma centralizada.
+ *
+ * Diseño para Render (servicios separados):
+ *  - Cada servicio destino es un servicio web público de Render (HTTPS, 443).
+ *  - Se reenvía la RUTA COMPLETA (/api/...): los servicios Spring/FastAPI mapean
+ *    sus endpoints bajo /api/..., así que NO se recorta el prefijo.
+ *  - Los hosts destino llegan por variables de entorno (AUTH_HOST, etc.),
+ *    resueltas por Render con `fromService ... property: host`.
+ */
 const http = require('http');
+const https = require('https');
 
 const PORT = process.env.PORT || 8080;
 
+// host destino por prefijo. En Render son URLs públicas (HTTPS/443).
 const SERVICES = [
-  { prefix: '/api/auth',     host: process.env.AUTH_URL     || 'localhost', port: process.env.AUTH_PORT     || '8081' },
-  { prefix: '/api/products', host: process.env.PRODUCT_URL  || 'localhost', port: process.env.PRODUCT_PORT  || '8082' },
-  { prefix: '/api/payments', host: process.env.PAYMENT_URL  || 'localhost', port: process.env.PAYMENT_PORT  || '8083' },
-  { prefix: '/api/audit',    host: process.env.AUDIT_URL    || 'localhost', port: process.env.AUDIT_PORT    || '8084' },
-  { prefix: '/api/ai',       host: process.env.AI_URL       || 'localhost', port: process.env.AI_PORT       || '8085' },
-  { prefix: '/api/orders',   host: process.env.PRODUCT_URL  || 'localhost', port: process.env.PRODUCT_PORT  || '8082' },
+  { prefix: '/api/auth',     host: process.env.AUTH_HOST },
+  { prefix: '/api/products', host: process.env.PRODUCT_HOST },
+  { prefix: '/api/orders',   host: process.env.PRODUCT_HOST },
+  { prefix: '/api/payments', host: process.env.PAYMENT_HOST },
+  { prefix: '/api/audit',    host: process.env.AUDIT_HOST },
+  { prefix: '/api/ai',       host: process.env.AI_HOST },
 ];
 
-// Lista blanca de orígenes permitidos (CORS_ALLOWED_ORIGINS separada por comas).
-// Antes se reflejaba cualquier Origin recibido junto con credenciales, lo que
-// permitía a cualquier sitio hacer peticiones autenticadas contra la API.
-const ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:3000,https://ecomarket.pe')
+// Si el host trae protocolo lo respetamos; si no, se asume HTTPS (Render 443).
+// Para desarrollo local puede definirse, por ejemplo, http://localhost:8081.
+function resolveTarget(host) {
+  if (!host) return null;
+  if (host.startsWith('http://') || host.startsWith('https://')) {
+    const u = new URL(host);
+    return { protocol: u.protocol, hostname: u.hostname, port: u.port || (u.protocol === 'https:' ? 443 : 80) };
+  }
+  return { protocol: 'https:', hostname: host, port: 443 };
+}
+
+const ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:3000')
   .split(',')
   .map((o) => o.trim())
   .filter(Boolean);
@@ -22,12 +45,11 @@ const ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:3
 function corsHeaders(origin) {
   const headers = {
     'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Requested-With',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Requested-With, X-Internal-Secret',
     'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Max-Age': '86400',
     'Vary': 'Origin',
   };
-  // Solo se refleja el Origin si está en la lista blanca.
   if (origin && ALLOWED_ORIGINS.includes(origin)) {
     headers['Access-Control-Allow-Origin'] = origin;
   }
@@ -38,53 +60,58 @@ const server = http.createServer((req, res) => {
   const origin = req.headers['origin'];
   const headers = corsHeaders(origin);
 
-  // Handle CORS preflight
+  // Health check propio del gateway (no depende de los demás servicios).
+  if (req.url === '/healthz' || req.url === '/') {
+    res.writeHead(200, { ...headers, 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ status: 'ok', service: 'gateway' }));
+  }
+
+  // Preflight CORS
   if (req.method === 'OPTIONS') {
     res.writeHead(204, headers);
     return res.end();
   }
 
-  const matched = SERVICES.find(s => req.url.startsWith(s.prefix));
+  const matched = SERVICES.find((s) => req.url.startsWith(s.prefix));
   if (!matched) {
     res.writeHead(404, { ...headers, 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ error: 'route not found' }));
   }
 
-  const path = req.url.substring(matched.prefix.length) || '/';
+  const target = resolveTarget(matched.host);
+  if (!target) {
+    res.writeHead(502, { ...headers, 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ error: 'upstream not configured', prefix: matched.prefix }));
+  }
 
-  // Strip origin header so backend services don't do their own CORS validation
+  // Se reenvía la ruta COMPLETA (sin recortar el prefijo).
   const forwardHeaders = { ...req.headers };
   delete forwardHeaders['origin'];
+  forwardHeaders['host'] = target.hostname; // SNI + enrutamiento correcto en Render
 
   const options = {
-    hostname: matched.host,
-    port: parseInt(matched.port, 10) || 80,
-    path: path,
+    protocol: target.protocol,
+    hostname: target.hostname,
+    port: target.port,
+    path: req.url,
     method: req.method,
-    headers: { ...forwardHeaders, host: matched.host },
+    headers: forwardHeaders,
   };
 
-  const proxyReq = http.request(options, (proxyRes) => {
-    const responseHeaders = {
-      ...headers,
-      ...proxyRes.headers,
-    };
-    // Gateway CORS headers override any backend CORS
-    Object.keys(headers).forEach(key => { responseHeaders[key] = headers[key]; });
+  const client = target.protocol === 'https:' ? https : http;
+  const proxyReq = client.request(options, (proxyRes) => {
+    const responseHeaders = { ...proxyRes.headers };
+    // El CORS lo controla el gateway (sobrescribe cualquier CORS del backend).
+    Object.keys(headers).forEach((k) => { responseHeaders[k] = headers[k]; });
     delete responseHeaders['transfer-encoding'];
-
-    let body = '';
-    proxyRes.on('data', chunk => { body += chunk; });
-    proxyRes.on('end', () => {
-      res.writeHead(proxyRes.statusCode, responseHeaders);
-      res.end(body);
-    });
+    res.writeHead(proxyRes.statusCode, responseHeaders);
+    proxyRes.pipe(res);
   });
 
   proxyReq.on('error', (err) => {
     console.error(`Proxy error for ${req.url}:`, err.message);
     res.writeHead(502, { ...headers, 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'upstream error', detail: err.message }));
+    res.end(JSON.stringify({ error: 'upstream error' }));
   });
 
   req.pipe(proxyReq);
@@ -92,5 +119,5 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, () => {
   console.log(`Gateway running on port ${PORT}`);
-  SERVICES.forEach(s => console.log(`  ${s.prefix} -> http://${s.host}:${s.port}`));
+  SERVICES.forEach((s) => console.log(`  ${s.prefix} -> ${s.host || '(sin configurar)'}`));
 });

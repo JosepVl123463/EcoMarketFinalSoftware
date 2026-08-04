@@ -1,73 +1,49 @@
-services:
-  # Frontend (Next.js) is deployed separately on Vercel.
-  # Set Root Directory = apps/web and NEXT_PUBLIC_API_URL in the Vercel dashboard.
+# ============================================================================
+# EcoMarket — Blueprint de Render (servicios SEPARADOS, plan gratuito)
+# ----------------------------------------------------------------------------
+# Cada microservicio corre en su propio servicio de 512 MB, evitando el OOM del
+# despliegue monolítico. El frontend se despliega aparte en Vercel.
+#
+# IMPORTANTE:
+#  - NO se usa el Dockerfile raíz (monolítico): consume >512 MB y tumba la
+#    instancia. Cada servicio usa su Dockerfile individual o buildpack.
+#  - Los secretos van con `sync: false` (se cargan en el panel de Render).
+#  - El ÚNICO punto de entrada del backend es `ecomarket-gateway`.
+#    En Vercel: NEXT_PUBLIC_API_URL = https://ecomarket-gateway.onrender.com
+# ============================================================================
 
-  # ── API Gateway ──────────────────────────────────────────
+services:
+  # ── API Gateway (punto de entrada único) ─────────────────
   - type: web
     name: ecomarket-gateway
     env: node
-    region: us
+    region: oregon
+    plan: free
     rootDir: infra/cloud-gateway
     startCommand: node index.js
-    healthCheckPath: /api/products/health
+    healthCheckPath: /healthz
     envVars:
-      - key: AUTH_URL
-        fromService:
-          type: web
-          name: ecomarket-auth-service
-          property: host
-      - key: AUTH_PORT
-        fromService:
-          type: web
-          name: ecomarket-auth-service
-          property: port
-      - key: PRODUCT_URL
-        fromService:
-          type: web
-          name: ecomarket-product-service
-          property: host
-      - key: PRODUCT_PORT
-        fromService:
-          type: web
-          name: ecomarket-product-service
-          property: port
-      - key: PAYMENT_URL
-        fromService:
-          type: web
-          name: ecomarket-payment-service
-          property: host
-      - key: PAYMENT_PORT
-        fromService:
-          type: web
-          name: ecomarket-payment-service
-          property: port
-      - key: AUDIT_URL
-        fromService:
-          type: web
-          name: ecomarket-audit-service
-          property: host
-      - key: AUDIT_PORT
-        fromService:
-          type: web
-          name: ecomarket-audit-service
-          property: port
-      - key: AI_URL
-        fromService:
-          type: web
-          name: ecomarket-ai-engine
-          property: host
-      - key: AI_PORT
-        fromService:
-          type: web
-          name: ecomarket-ai-engine
-          property: port
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://eco-market-final-software-s2w6.vercel.app"
+      - key: AUTH_HOST
+        fromService: { type: web, name: ecomarket-auth-service, property: host }
+      - key: PRODUCT_HOST
+        fromService: { type: web, name: ecomarket-product-service, property: host }
+      - key: PAYMENT_HOST
+        fromService: { type: web, name: ecomarket-payment-service, property: host }
+      - key: AUDIT_HOST
+        fromService: { type: web, name: ecomarket-audit-service, property: host }
+      - key: AI_HOST
+        fromService: { type: web, name: ecomarket-ai-engine, property: host }
 
-  # ── Auth Service (Java/Spring Boot) ──────────────────────
+  # ── Auth Service (Java / Spring Boot) ────────────────────
   - type: web
     name: ecomarket-auth-service
     env: docker
-    region: us
+    region: oregon
+    plan: free
     dockerfilePath: ./services/auth-service/Dockerfile
+    dockerContext: ./services/auth-service
     envVars:
       - key: PORT
         value: "8081"
@@ -79,15 +55,19 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
       - key: CORS_ALLOWED_ORIGINS
-        value: "https://ecomarket-web.onrender.com"
+        value: "https://eco-market-final-software-s2w6.vercel.app"
 
-  # ── Product Service (Java/Spring Boot) ───────────────────
+  # ── Product Service (Java / Spring Boot) ─────────────────
   - type: web
     name: ecomarket-product-service
     env: docker
-    region: us
+    region: oregon
+    plan: free
     dockerfilePath: ./services/product-service/Dockerfile
+    dockerContext: ./services/product-service
     envVars:
       - key: PORT
         value: "8082"
@@ -99,122 +79,94 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
-      # Secreto compartido para autenticar llamadas internas (confirmar pago).
       - key: INTERNAL_SERVICE_SECRET
         sync: false
-      # true solo si el servicio está detrás del gateway (para X-Forwarded-For).
-      - key: TRUST_PROXY
-        value: "true"
-      - key: AUDIT_SERVICE_URL
-        value: https://ecomarket-audit-service.onrender.com
       - key: CORS_ALLOWED_ORIGINS
-        value: "https://ecomarket-web.onrender.com"
+        value: "https://eco-market-final-software-s2w6.vercel.app"
 
-  # ── Payment Service (Node.js) ───────────────────────────
+  # ── Payment Service (Node.js / Express) ──────────────────
   - type: web
     name: ecomarket-payment-service
     env: docker
-    region: us
+    region: oregon
+    plan: free
     dockerfilePath: ./services/payment-service/Dockerfile
+    dockerContext: ./services/payment-service
     envVars:
       - key: PORT
         value: "8083"
+      - key: JWT_SECRET
+        sync: false
+      - key: INTERNAL_SERVICE_SECRET
+        sync: false
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
+      # Modo demo: pagos simulados (registran el pedido sin cobrar). Quitar para
+      # cobros reales con Stripe.
+      - key: PAYMENTS_DEMO_MODE
+        value: "true"
       - key: STRIPE_SUCCESS_URL
-        value: "https://ecomarket-web.onrender.com/success"
+        value: "https://eco-market-final-software-s2w6.vercel.app/checkout?status=success"
       - key: STRIPE_CANCEL_URL
-        value: "https://ecomarket-web.onrender.com/cart"
-      - key: JWT_SECRET
-        sync: false
-      # Mismo secreto interno que product-service y notification-service.
-      - key: INTERNAL_SERVICE_SECRET
-        sync: false
+        value: "https://eco-market-final-software-s2w6.vercel.app/checkout?status=cancel"
+      # El host lo entrega Render; el servicio construye la URL HTTPS.
       - key: PRODUCT_SERVICE_HOST
-        fromService:
-          type: web
-          name: ecomarket-product-service
-          property: host
-      - key: PRODUCT_SERVICE_PORT
-        fromService:
-          type: web
-          name: ecomarket-product-service
-          property: port
+        fromService: { type: web, name: ecomarket-product-service, property: host }
       - key: NOTIFICATION_SERVICE_HOST
-        fromService:
-          type: web
-          name: ecomarket-notification-service
-          property: host
-      - key: NOTIFICATION_SERVICE_PORT
-        fromService:
-          type: web
-          name: ecomarket-notification-service
-          property: port
+        fromService: { type: web, name: ecomarket-notification-service, property: host }
       - key: CORS_ALLOWED_ORIGINS
-        value: "https://ecomarket-web.onrender.com"
+        value: "https://eco-market-final-software-s2w6.vercel.app"
 
-  # ── Audit Service (Python/FastAPI) ──────────────────────
+  # ── Audit Service (Python / FastAPI) ─────────────────────
   - type: web
     name: ecomarket-audit-service
     env: docker
-    region: us
+    region: oregon
+    plan: free
     dockerfilePath: ./services/audit-service/Dockerfile
+    dockerContext: ./services/audit-service
     envVars:
       - key: PORT
         value: "8084"
       - key: MONGO_URI
         sync: false
-      # Verificación de JWT para endpoints de auditoría (aprobar/rechazar).
       - key: JWT_SECRET
         sync: false
       - key: AI_ENGINE_HOST
-        fromService:
-          type: web
-          name: ecomarket-ai-engine
-          property: host
-      - key: AI_ENGINE_PORT
-        fromService:
-          type: web
-          name: ecomarket-ai-engine
-          property: port
+        fromService: { type: web, name: ecomarket-ai-engine, property: host }
       - key: PRODUCT_SERVICE_HOST
-        fromService:
-          type: web
-          name: ecomarket-product-service
-          property: host
-      - key: PRODUCT_SERVICE_PORT
-        fromService:
-          type: web
-          name: ecomarket-product-service
-          property: port
+        fromService: { type: web, name: ecomarket-product-service, property: host }
       - key: CORS_ALLOWED_ORIGINS
-        value: "https://ecomarket-web.onrender.com"
+        value: "https://eco-market-final-software-s2w6.vercel.app"
 
-  # ── AI Engine (Python/FastAPI) ──────────────────────────
+  # ── AI Engine (Python / FastAPI) ─────────────────────────
   - type: web
     name: ecomarket-ai-engine
     env: python
-    region: us
+    region: oregon
+    plan: free
     rootDir: services/ai-engine
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
     envVars:
       - key: CORS_ALLOWED_ORIGINS
-        value: "https://ecomarket-web.onrender.com"
+        value: "https://eco-market-final-software-s2w6.vercel.app"
 
-  # ── Notification Service (Python/FastAPI) ──────────────
+  # ── Notification Service (Python / FastAPI) ──────────────
   - type: web
     name: ecomarket-notification-service
     env: python
-    region: us
+    region: oregon
+    plan: free
     rootDir: services/notification-service
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
     envVars:
-      - key: CORS_ALLOWED_ORIGINS
-        value: "https://ecomarket-web.onrender.com"
-      # Mismo secreto interno que payment-service para autorizar el envío.
       - key: INTERNAL_SERVICE_SECRET
         sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://eco-market-final-software-s2w6.vercel.app"

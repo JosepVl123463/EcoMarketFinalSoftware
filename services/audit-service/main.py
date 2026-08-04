@@ -76,13 +76,20 @@ def require_admin(authorization: Optional[str] = Header(default=None)):
         raise HTTPException(status_code=403, detail="Se requiere rol de administrador")
     return claims
 
-AI_ENGINE_HOST = os.getenv("AI_ENGINE_HOST", "ai-engine")
-AI_ENGINE_PORT = os.getenv("AI_ENGINE_PORT", "8085")
-AI_ENGINE_URL = f"http://{AI_ENGINE_HOST}:{AI_ENGINE_PORT}"
+# Resuelve la URL de un servicio interno de forma compatible con Render y local:
+#  1) *_URL completa → se usa tal cual.
+#  2) Solo *_HOST (como entrega Render con `fromService`) → HTTPS público (443).
+#  3) En su defecto → nombre del servicio en docker-compose (HTTP).
+def _resolve_service_url(url_env, host_env, local_default):
+    if os.getenv(url_env):
+        return os.getenv(url_env)
+    host = os.getenv(host_env)
+    if host:
+        return f"https://{host}"
+    return local_default
 
-PRODUCT_SERVICE_HOST = os.getenv("PRODUCT_SERVICE_HOST", "product-service")
-PRODUCT_SERVICE_PORT = os.getenv("PRODUCT_SERVICE_PORT", "8082")
-PRODUCT_SERVICE_URL = f"http://{PRODUCT_SERVICE_HOST}:{PRODUCT_SERVICE_PORT}"
+AI_ENGINE_URL = _resolve_service_url("AI_ENGINE_URL", "AI_ENGINE_HOST", "http://ai-engine:8085")
+PRODUCT_SERVICE_URL = _resolve_service_url("PRODUCT_SERVICE_URL", "PRODUCT_SERVICE_HOST", "http://product-service:8082")
 
 
 class AuditRequest(BaseModel):
