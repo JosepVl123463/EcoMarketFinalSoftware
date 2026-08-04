@@ -115,10 +115,10 @@ export function ProductGrid() {
               setActiveCategory(cat);
               setFilters(f => ({ ...f, category: cat === 'Todos' ? undefined : cat }));
             }}
-            className={`flex-none px-6 py-3 rounded-2xl font-semibold text-sm transition whitespace-nowrap ${
+            className={`flex-none px-5 py-2.5 rounded-full font-semibold text-sm transition whitespace-nowrap ${
               activeCategory === cat
-                ? 'bg-[var(--primary)] text-[var(--text-inverse)] shadow-lg'
-                : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--primary)]'
+                ? 'bg-[var(--primary)] text-[var(--text-inverse)] shadow-lg shadow-[var(--primary)]/20 scale-105'
+                : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--primary)] hover:text-[var(--primary)]'
             }`}
           >
             {cat}
@@ -128,13 +128,13 @@ export function ProductGrid() {
 
       {/* Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {[...Array(8)].map((_, i) => (
-            <div key={i} className="bg-[var(--input-bg)] rounded-[2rem] aspect-[3/4] animate-pulse" />
+            <div key={i} className="bg-[var(--input-bg)] rounded-3xl aspect-[4/6] animate-pulse" />
           ))}
         </div>
       ) : displayed.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {displayed.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
