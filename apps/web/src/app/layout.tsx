@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 import { Navbar } from '@/components/Navbar';
+import { BottomNav } from '@/components/BottomNav';
 import { Providers } from './providers';
 
 const jakartaSans = Plus_Jakarta_Sans({
@@ -69,6 +70,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Navbar />
           </Suspense>
           {children}
+          {/* Espacio para que la barra inferior (móvil) no tape el contenido */}
+          <div className="h-20 lg:hidden" aria-hidden />
+          <BottomNav />
         </Providers>
       </body>
     </html>

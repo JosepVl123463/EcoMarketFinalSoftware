@@ -81,6 +81,13 @@ function NavbarInner() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Permite abrir el carrito desde la barra de navegación inferior (móvil).
+  useEffect(() => {
+    const open = () => setCartOpen(true);
+    window.addEventListener('ecomarket:open-cart', open);
+    return () => window.removeEventListener('ecomarket:open-cart', open);
+  }, []);
+
   return (
     <>
       <div className="bg-[var(--primary)] text-[var(--text-inverse)] text-[11px] py-2 px-6 flex justify-between items-center font-bold tracking-widest uppercase">
