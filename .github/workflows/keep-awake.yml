@@ -1,0 +1,42 @@
+# ============================================================================
+# Keep-Awake — mantiene despiertos los servicios de Render (plan gratuito)
+# ----------------------------------------------------------------------------
+# El plan Free de Render duerme un servicio tras ~15 min sin tráfico y tarda
+# ~50 s en despertar. Este workflow le hace un "ping" a cada servicio cada
+# 10 minutos para que la primera visita del usuario nunca dé error/502.
+#
+# - Es gratis: en repos públicos los workflows programados no consumen minutos;
+#   en privados el consumo es de segundos por ejecución.
+# - Cualquier respuesta HTTP (200, 404, etc.) cuenta como tráfico y despierta
+#   al servicio, por eso el ping NO falla aunque un servicio tarde en arrancar.
+# - GitHub puede retrasar el cron en horas pico; 10 min deja margen frente al
+#   límite de 15 min de inactividad de Render.
+# ============================================================================
+name: keep-render-awake
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # cada 10 minutos
+  workflow_dispatch: {}        # permite ejecutarlo a mano desde la pestaña Actions
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Despertar servicios de Render
+        run: |
+          urls=(
+            "https://ecomarket-gateway.onrender.com/healthz"
+            "https://ecomarket-auth-service.onrender.com/"
+            "https://ecomarket-product-service.onrender.com/"
+            "https://ecomarket-payment-service.onrender.com/api/payments/health"
+            "https://ecomarket-audit-service.onrender.com/"
+            "https://ecomarket-ai-engine.onrender.com/health"
+            "https://ecomarket-notification-service.onrender.com/health"
+          )
+          for url in "${urls[@]}"; do
+            code=$(curl -sS -m 90 -o /dev/null -w "%{http_code}" "$url" || echo "timeout")
+            echo "ping $url -> $code"
+          done
+          echo "Ping completado (los códigos 200/404/etc. igual mantienen el servicio despierto)."
