@@ -34,7 +34,10 @@ function resolveTarget(host) {
     const u = new URL(host);
     return { protocol: u.protocol, hostname: u.hostname, port: u.port || (u.protocol === 'https:' ? 443 : 80) };
   }
-  return { protocol: 'https:', hostname: host, port: 443 };
+  // Render entrega el nombre "pelado" del servicio (p.ej. "ecomarket-auth-service").
+  // El host público es <nombre>.onrender.com sobre HTTPS/443.
+  const hostname = host.includes('.') ? host : `${host}.onrender.com`;
+  return { protocol: 'https:', hostname, port: 443 };
 }
 
 const ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:3000')

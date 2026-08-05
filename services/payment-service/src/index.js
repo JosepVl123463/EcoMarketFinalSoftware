@@ -52,7 +52,12 @@ const PORT = process.env.PORT || 8083;
 //  3) En su defecto, se usa el nombre del servicio en docker-compose (HTTP).
 function resolveServiceUrl(urlEnv, hostEnv, localDefault) {
   if (process.env[urlEnv]) return process.env[urlEnv];
-  if (process.env[hostEnv]) return `https://${process.env[hostEnv]}`;
+  const host = process.env[hostEnv];
+  if (host) {
+    // Render entrega el nombre "pelado"; el host público es <nombre>.onrender.com.
+    const h = host.includes('.') ? host : `${host}.onrender.com`;
+    return `https://${h}`;
+  }
   return localDefault;
 }
 const PRODUCT_SERVICE_URL = resolveServiceUrl('PRODUCT_SERVICE_URL', 'PRODUCT_SERVICE_HOST', 'http://product-service:8082');

@@ -85,7 +85,9 @@ def _resolve_service_url(url_env, host_env, local_default):
         return os.getenv(url_env)
     host = os.getenv(host_env)
     if host:
-        return f"https://{host}"
+        # Render entrega el nombre "pelado"; el host público es <nombre>.onrender.com.
+        h = host if "." in host else f"{host}.onrender.com"
+        return f"https://{h}"
     return local_default
 
 AI_ENGINE_URL = _resolve_service_url("AI_ENGINE_URL", "AI_ENGINE_HOST", "http://ai-engine:8085")
