@@ -24,6 +24,9 @@ export default function CheckoutPage() {
   const [orderId, setOrderId] = useState<string | null>(null);
   const [transactionRef, setTransactionRef] = useState<string | null>(null);
   const [usedMethod, setUsedMethod] = useState<PaymentMethod | null>(null);
+  // Monto cobrado, congelado antes de vaciar el carrito para que el comprobante
+  // muestre el total real (si no, tras clearCart el total recalculado daría solo el envío).
+  const [paidTotal, setPaidTotal] = useState(0);
 
   // Peruvian Payment Hub states
   const [activeTab, setActiveTab] = useState<PaymentMethod>('card');
@@ -218,6 +221,7 @@ export default function CheckoutPage() {
       if (res.success) {
         setTransactionRef(res.transactionRef);
         setUsedMethod(method);
+        setPaidTotal(total); // congelar el monto antes de vaciar el carrito
         setStep('success');
         clearCart();
         toast.success('¡Transacción exitosa! 🌿');
@@ -703,7 +707,7 @@ export default function CheckoutPage() {
 
               <div className="flex justify-between text-xs">
                 <span className="text-[var(--text-muted)] font-semibold">Total Pagado:</span>
-                <span className="font-extrabold text-[var(--primary)]">S/. {total.toFixed(2)}</span>
+                <span className="font-extrabold text-[var(--primary)]">S/. {paidTotal.toFixed(2)}</span>
               </div>
             </div>
 
