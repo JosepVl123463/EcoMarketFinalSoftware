@@ -32,8 +32,18 @@ import os
 MONGO_URI = os.getenv("MONGO_URI")
 if not MONGO_URI:
     raise RuntimeError("MONGO_URI no está configurado")
-client = AsyncIOMotorClient(MONGO_URI)
-db = client.ecomarket_audit
+
+# El servicio NO debe caerse al arrancar si Mongo está temporalmente inaccesible
+# (p. ej. un cluster de Atlas pausado, que impide resolver el registro SRV). Se
+# arranca de todos modos; los endpoints que usen `db` responderán 503 si falta.
+try:
+    client = AsyncIOMotorClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+    db = client.ecomarket_audit
+except Exception as _mongo_err:
+    print(f"WARN: no se pudo inicializar MongoDB al arrancar: {_mongo_err}. "
+          f"El servicio arranca, pero /api/audit no funcionará hasta que Mongo esté disponible.")
+    client = None
+    db = None
 
 app = FastAPI(title="EcoMarket Audit Service", description="AI-driven Eco-Score and audit ledger with MongoDB persistence")
 
