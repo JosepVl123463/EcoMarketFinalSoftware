@@ -150,6 +150,17 @@ function NavbarInner() {
                 )}
               </button>
 
+              {/* Cuenta/Login compacto SIEMPRE visible en móvil (arriba) */}
+              <Link
+                href={isAuthenticated ? '/profile' : '/auth/login'}
+                id="mobile-account-btn"
+                prefetch
+                aria-label={isAuthenticated ? 'Mi cuenta' : 'Ingresar o registrarse'}
+                className="sm:hidden flex items-center justify-center w-9 h-9 rounded-full bg-[var(--primary)] text-[var(--text-inverse)]"
+              >
+                <User size={18} />
+              </Link>
+
               {isAuthenticated ? (
                 <div
                   ref={dropdownRef}
